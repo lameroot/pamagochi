@@ -3,7 +3,7 @@
 ## Метаданные
 
 * Дата: 2026-07-28.
-* Commit SHA: см. итоговый ответ агента (заполняется после `git push`).
+* Commit SHA: `788d87f4d4674bc49c58ef9e86f123bd7980a5da` (ветка `cursor/pamagochi-monorepo-skeleton-d23e`).
 * Node.js: 24.18.0 (LTS Krypton). pnpm: 10.15.0. Полный список версий — `docs/versions.md`.
 * Ветка: `cursor/pamagochi-monorepo-skeleton-d23e`.
 
