@@ -1,0 +1,24 @@
+name: pamagochi-local
+
+services:
+  postgres:
+    image: postgres:17.6-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-pamagochi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pamagochi}
+      POSTGRES_DB: ${POSTGRES_DB:-pamagochi}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - pamagochi-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER:-pamagochi} -d $${POSTGRES_DB:-pamagochi}']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  pamagochi-postgres-data:
+    name: pamagochi-local-postgres-data

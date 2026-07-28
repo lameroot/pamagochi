@@ -1,0 +1,49 @@
+{
+  "name": "pamagochi",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Pamagochi \u2014 educational game platform monorepo (local & cloud profiles)",
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@10.15.0",
+  "engines": {
+    "node": ">=24 <25",
+    "pnpm": ">=10"
+  },
+  "scripts": {
+    "dev": "pnpm dev:local",
+    "dev:local": "node scripts/run-profile.mjs local dev",
+    "dev:cloud": "node scripts/run-profile.mjs cloud dev",
+    "setup:local": "node scripts/setup-local.mjs",
+    "verify:local": "node scripts/verify-local.mjs",
+    "verify:cloud": "node scripts/verify-cloud.mjs",
+    "db:local:up": "docker compose --env-file .env.local -f infra/local/compose.yaml up -d postgres",
+    "db:local:down": "docker compose --env-file .env.local -f infra/local/compose.yaml down",
+    "db:local:reset": "docker compose --env-file .env.local -f infra/local/compose.yaml down -v",
+    "db:generate": "pnpm --filter @pamagochi/database run prisma:generate",
+    "db:migrate:local": "node scripts/run-profile.mjs local db:migrate",
+    "db:migrate:cloud": "node scripts/run-profile.mjs cloud db:migrate",
+    "db:seed:local": "node scripts/run-profile.mjs local db:seed",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "e2e:local": "node scripts/run-profile.mjs local e2e",
+    "smoke:cloud": "node scripts/verify-cloud.mjs",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "24.13.3",
+    "eslint": "10.8.0",
+    "eslint-config-prettier": "10.1.8",
+    "globals": "17.8.0",
+    "pg": "8.22.0",
+    "prettier": "3.9.6",
+    "turbo": "2.10.7",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.65.0"
+  }
+}

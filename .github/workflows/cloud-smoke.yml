@@ -1,0 +1,40 @@
+name: Cloud smoke
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  cloud-smoke:
+    runs-on: ubuntu-latest
+    env:
+      CLOUD_API_URL: ${{ secrets.CLOUD_API_URL }}
+      CLOUD_WEB_URL: ${{ secrets.CLOUD_WEB_URL }}
+      CLOUD_TEST_EMAIL: ${{ secrets.CLOUD_TEST_EMAIL }}
+      CLOUD_TEST_PASSWORD: ${{ secrets.CLOUD_TEST_PASSWORD }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      PLAYWRIGHT_BASE_URL: ${{ secrets.CLOUD_WEB_URL }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm --filter @pamagochi/e2e exec playwright install --with-deps chromium
+
+      - name: API + Storage cloud smoke (verify:cloud)
+        run: pnpm verify:cloud
+
+      - name: Browser smoke test (Cloudflare Pages, Phaser canvas)
+        run: pnpm --filter @pamagochi/e2e exec playwright test --grep @cloud
