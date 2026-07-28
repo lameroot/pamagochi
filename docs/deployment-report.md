@@ -2,24 +2,24 @@
 
 ## Метаданные
 
-* Дата: 2026-07-28.
-* Commit SHA: `788d87f4d4674bc49c58ef9e86f123bd7980a5da` (ветка `cursor/pamagochi-monorepo-skeleton-d23e`).
-* Node.js: 24.18.0 (LTS Krypton). pnpm: 10.15.0. Полный список версий — `docs/versions.md`.
-* Ветка: `cursor/pamagochi-monorepo-skeleton-d23e`.
+- Дата: 2026-07-28.
+- Commit SHA: `788d87f4d4674bc49c58ef9e86f123bd7980a5da` (ветка `cursor/pamagochi-monorepo-skeleton-d23e`).
+- Node.js: 24.18.0 (LTS Krypton). pnpm: 10.15.0. Полный список версий — `docs/versions.md`.
+- Ветка: `cursor/pamagochi-monorepo-skeleton-d23e`.
 
 ## Cloud resources
 
 **Не созданы.** У агента не было доступа к Supabase, Koyeb или Cloudflare (ни MCP-интеграций к этим сервисам, ни API-токенов/креденшлов в окружении). Весь код, конфигурация и документация для cloud-профиля подготовлены и локально протестированы в максимально возможном объёме без реальных облачных аккаунтов:
 
-* API успешно **собран в production Docker-образ** по `infra/cloud/api.Dockerfile` (build context — корень репозитория, multi-stage: base → dependencies → builder → runner) и **запущен локально в контейнере** с `APP_PROFILE=cloud`, `AUTH_PROVIDER=supabase`, `STORAGE_PROVIDER=supabase-s3` (с фиктивными Supabase-значениями, реальным PostgreSQL). Подтверждено:
-  * `GET /api/health/live` → `200 {"status":"ok"}`
-  * `GET /api/health/ready` → `200`, включая проверку PostgreSQL
-  * `GET /api/meta/version` → `200`, `appProfile":"cloud"`, `authProvider":"supabase"`, без секретов в ответе
-  * `POST /api/dev/login` → `404` (эндпоинт не зарегистрирован в cloud-сборке, как того требует ТЗ)
-  * образ запускается от непривилегированного пользователя, слушает `PORT`/`API_PORT`, содержит HEALTHCHECK.
-* Supabase project ref: не создан.
-* Koyeb App/Service: не развёрнуто (нет Koyeb API token).
-* Cloudflare Pages project: не развёрнуто (нет Cloudflare API token).
+- API успешно **собран в production Docker-образ** по `infra/cloud/api.Dockerfile` (build context — корень репозитория, multi-stage: base → dependencies → builder → runner) и **запущен локально в контейнере** с `APP_PROFILE=cloud`, `AUTH_PROVIDER=supabase`, `STORAGE_PROVIDER=supabase-s3` (с фиктивными Supabase-значениями, реальным PostgreSQL). Подтверждено:
+  - `GET /api/health/live` → `200 {"status":"ok"}`
+  - `GET /api/health/ready` → `200`, включая проверку PostgreSQL
+  - `GET /api/meta/version` → `200`, `appProfile":"cloud"`, `authProvider":"supabase"`, без секретов в ответе
+  - `POST /api/dev/login` → `404` (эндпоинт не зарегистрирован в cloud-сборке, как того требует ТЗ)
+  - образ запускается от непривилегированного пользователя, слушает `PORT`/`API_PORT`, содержит HEALTHCHECK.
+- Supabase project ref: не создан.
+- Koyeb App/Service: не развёрнуто (нет Koyeb API token).
+- Cloudflare Pages project: не развёрнуто (нет Cloudflare API token).
 
 Реальное облачное развёртывание (этапы 4–7 ТЗ) требует, чтобы пользователь предоставил доступ — см. `docs/credentials.md` за перечнем нужных значений — после чего эти шаги можно выполнить.
 
@@ -30,26 +30,26 @@ $ pnpm db:local:reset
 $ pnpm setup:local
 ```
 
-* Docker Compose поднимает `postgres:17.6-bookworm` (единственный сервис, healthcheck через `pg_isready`, именованный volume `pamagochi-local-postgres-data`).
-* `prisma migrate deploy` применяет единственную миграцию `20260728204236_init` (создание `parent_accounts`, `child_profiles`, `skill_progress`, `quest_progress`, `stored_assets` + enum'ы) — успешно, идемпотентно при повторных запусках («No pending migrations to apply»).
-* Seed (`prisma/seed.ts`) идемпотентен: повторные запуски возвращают тот же `parent.id`, `child.id`; создаёт 1 родителя, 1 демо-ребёнка, 3 skill records, 1 квест `first-steps`. Реальные персональные данные не используются.
+- Docker Compose поднимает `postgres:17.6-bookworm` (единственный сервис, healthcheck через `pg_isready`, именованный volume `pamagochi-local-postgres-data`).
+- `prisma migrate deploy` применяет единственную миграцию `20260728204236_init` (создание `parent_accounts`, `child_profiles`, `skill_progress`, `quest_progress`, `stored_assets` + enum'ы) — успешно, идемпотентно при повторных запусках («No pending migrations to apply»).
+- Seed (`prisma/seed.ts`) идемпотентен: повторные запуски возвращают тот же `parent.id`, `child.id`; создаёт 1 родителя, 1 демо-ребёнка, 3 skill records, 1 квест `first-steps`. Реальные персональные данные не используются.
 
 ## Результаты тестов и проверок (все выполнены реально, не в теории)
 
-| Команда | Результат |
-|---|---|
-| `pnpm format:check` | ✅ pass |
-| `pnpm lint` | ✅ pass (0 errors; несколько допустимых warnings `no-console`/`no-explicit-any`) |
-| `pnpm typecheck` | ✅ pass (все 7 workspace-пакетов) |
-| `pnpm test` | ✅ pass — 65 unit-тестов (game-core 22, contracts 6, api 29, web 6, ui 2) |
-| `pnpm --filter @pamagochi/api run test:integration` | ✅ pass — 6 интеграционных тестов на реальном PostgreSQL (readiness, dev-login, идемпотентный upsert ParentAccount, создание ребёнка, запрет чтения чужого ребёнка (404), upload-url → complete asset flow) |
-| `pnpm build` | ✅ pass — все пакеты и оба приложения собираются |
-| `pnpm setup:local` | ✅ exit code 0 |
-| `pnpm e2e:local` / Playwright (`local-smoke.spec.ts`) | ✅ pass — local login, `LOCAL` badge, `API: online`, Phaser canvas виден, `scene-ready` получен React, создание детского профиля через форму, обновление страницы, профиль сохранился, отсутствие критических console errors |
-| `pnpm verify:local` | ✅ **exit code 0**, повторные прогоны стабильны, порты 3000/5173 освобождаются, PostgreSQL остаётся запущенным |
-| `docker build -f infra/cloud/api.Dockerfile .` | ✅ успешно собирается |
-| Запуск собранного образа локально (cloud-профиль, реальный Postgres, фиктивные Supabase-переменные) | ✅ `/api/health/live`, `/api/health/ready`, `/api/meta/version` отвечают корректно; `/api/dev/login` → 404 |
-| `pnpm verify:cloud` | ⛔ Не может быть выполнен — требует реальные `CLOUD_API_URL`, `CLOUD_WEB_URL`, `CLOUD_TEST_EMAIL`, `CLOUD_TEST_PASSWORD`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, которых нет. Скрипт корректно завершается с понятной ошибкой о недостающих переменных (эта часть проверена: `node scripts/verify-cloud.mjs` без переменных выводит точный список отсутствующих значений и завершается ненулевым кодом). |
+| Команда                                                                                             | Результат                                                                                                                                                                                                                                                                                                                                                                                              |
+| --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm format:check`                                                                                 | ✅ pass                                                                                                                                                                                                                                                                                                                                                                                                |
+| `pnpm lint`                                                                                         | ✅ pass (0 errors; несколько допустимых warnings `no-console`/`no-explicit-any`)                                                                                                                                                                                                                                                                                                                       |
+| `pnpm typecheck`                                                                                    | ✅ pass (все 7 workspace-пакетов)                                                                                                                                                                                                                                                                                                                                                                      |
+| `pnpm test`                                                                                         | ✅ pass — 65 unit-тестов (game-core 22, contracts 6, api 29, web 6, ui 2)                                                                                                                                                                                                                                                                                                                              |
+| `pnpm --filter @pamagochi/api run test:integration`                                                 | ✅ pass — 6 интеграционных тестов на реальном PostgreSQL (readiness, dev-login, идемпотентный upsert ParentAccount, создание ребёнка, запрет чтения чужого ребёнка (404), upload-url → complete asset flow)                                                                                                                                                                                            |
+| `pnpm build`                                                                                        | ✅ pass — все пакеты и оба приложения собираются                                                                                                                                                                                                                                                                                                                                                       |
+| `pnpm setup:local`                                                                                  | ✅ exit code 0                                                                                                                                                                                                                                                                                                                                                                                         |
+| `pnpm e2e:local` / Playwright (`local-smoke.spec.ts`)                                               | ✅ pass — local login, `LOCAL` badge, `API: online`, Phaser canvas виден, `scene-ready` получен React, создание детского профиля через форму, обновление страницы, профиль сохранился, отсутствие критических console errors                                                                                                                                                                           |
+| `pnpm verify:local`                                                                                 | ✅ **exit code 0**, повторные прогоны стабильны, порты 3000/5173 освобождаются, PostgreSQL остаётся запущенным                                                                                                                                                                                                                                                                                         |
+| `docker build -f infra/cloud/api.Dockerfile .`                                                      | ✅ успешно собирается                                                                                                                                                                                                                                                                                                                                                                                  |
+| Запуск собранного образа локально (cloud-профиль, реальный Postgres, фиктивные Supabase-переменные) | ✅ `/api/health/live`, `/api/health/ready`, `/api/meta/version` отвечают корректно; `/api/dev/login` → 404                                                                                                                                                                                                                                                                                             |
+| `pnpm verify:cloud`                                                                                 | ⛔ Не может быть выполнен — требует реальные `CLOUD_API_URL`, `CLOUD_WEB_URL`, `CLOUD_TEST_EMAIL`, `CLOUD_TEST_PASSWORD`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, которых нет. Скрипт корректно завершается с понятной ошибкой о недостающих переменных (эта часть проверена: `node scripts/verify-cloud.mjs` без переменных выводит точный список отсутствующих значений и завершается ненулевым кодом). |
 
 ## Найденные и исправленные в процессе баги
 
@@ -65,16 +65,16 @@ $ pnpm setup:local
 
 ## Известные ограничения
 
-* Cloud-развёртывание (Supabase / Koyeb / Cloudflare Pages) не выполнено — нет доступа к внешним аккаунтам/токенам. Код и документация полностью готовы к развёртыванию, как только пользователь предоставит доступ (см. `docs/credentials.md`).
-* `pnpm verify:cloud` и manual workflow `cloud-smoke.yml` не запускались end-to-end по той же причине.
-* Docker-образ API — 729 МБ (не оптимизирован дальше `pnpm prune --prod`; можно уменьшить, убрав неиспользуемые нативные бинарники esbuild/rolldown, доставшиеся от `apps/web`/дev-инструментов, отдельной задачей).
-* GitHub Actions (`ci.yml`, `cloud-smoke.yml`) не запускались реально в GitHub (нет пуша с активным CI в рамках этой сессии на момент подготовки отчёта) — конфигурация проверена локально шаг за шагом (`prisma migrate`, тесты, build, e2e — все именно теми же командами, что в workflow).
-* Docker и Docker Compose не были доступны из коробки в этой изолированной среде — установлены вручную (docker.io, docker-compose-v2) и запущены с `--storage-driver=vfs` из-за ограничений overlayfs в песочнице; на реальном CI-раннере (GitHub Actions, Koyeb) эти ограничения отсутствуют.
-* Container-to-container сеть Docker (bridge) не работала в этой конкретной песочнице (nftables недоступен) — smoke-тест собранного образа выполнялся через `--network host`; это ограничение среды выполнения агента, не приложения.
+- Cloud-развёртывание (Supabase / Koyeb / Cloudflare Pages) не выполнено — нет доступа к внешним аккаунтам/токенам. Код и документация полностью готовы к развёртыванию, как только пользователь предоставит доступ (см. `docs/credentials.md`).
+- `pnpm verify:cloud` и manual workflow `cloud-smoke.yml` не запускались end-to-end по той же причине.
+- Docker-образ API — 729 МБ (не оптимизирован дальше `pnpm prune --prod`; можно уменьшить, убрав неиспользуемые нативные бинарники esbuild/rolldown, доставшиеся от `apps/web`/дev-инструментов, отдельной задачей).
+- GitHub Actions (`ci.yml`, `cloud-smoke.yml`) не запускались реально в GitHub (нет пуша с активным CI в рамках этой сессии на момент подготовки отчёта) — конфигурация проверена локально шаг за шагом (`prisma migrate`, тесты, build, e2e — все именно теми же командами, что в workflow).
+- Docker и Docker Compose не были доступны из коробки в этой изолированной среде — установлены вручную (docker.io, docker-compose-v2) и запущены с `--storage-driver=vfs` из-за ограничений overlayfs в песочнице; на реальном CI-раннере (GitHub Actions, Koyeb) эти ограничения отсутствуют.
+- Container-to-container сеть Docker (bridge) не работала в этой конкретной песочнице (nftables недоступен) — smoke-тест собранного образа выполнялся через `--network host`; это ограничение среды выполнения агента, не приложения.
 
 ## Credentials, рекомендованные к ротации
 
 Cloud-ресурсы не создавались, поэтому ротация пока не требуется. Общий список credentials и их назначение — `docs/credentials.md`. После первого реального облачного развёртывания рекомендуется:
 
-* при первичной настройке Supabase Storage S3-ключей — если значения когда-либо были показаны в терминале/логах при копировании вручную, ротировать `SUPABASE_S3_ACCESS_KEY`/`SUPABASE_S3_SECRET_KEY` сразу после проверки;
-* использовать выделенный, а не личный, Koyeb/Cloudflare API token с минимальными правами, и отозвать его по завершании первоначальной настройки, заменив на токен, привязанный к CI/CD интеграции.
+- при первичной настройке Supabase Storage S3-ключей — если значения когда-либо были показаны в терминале/логах при копировании вручную, ротировать `SUPABASE_S3_ACCESS_KEY`/`SUPABASE_S3_SECRET_KEY` сразу после проверки;
+- использовать выделенный, а не личный, Koyeb/Cloudflare API token с минимальными правами, и отозвать его по завершании первоначальной настройки, заменив на токен, привязанный к CI/CD интеграции.
