@@ -239,4 +239,56 @@ describe('API integration', () => {
       });
     expect(bootstrapRevoked.statusCode).toBe(403);
   });
+
+  it('serves voice-agent session context only with service token', async () => {
+    const createChild = await app
+      .getHttpAdapter()
+      .getInstance()
+      .inject({
+        method: 'POST',
+        url: '/api/children',
+        headers: { ...authHeader(), 'content-type': 'application/json' },
+        payload: { displayName: 'Agent Kid', avatarKey: 'panda', birthYear: 2018 },
+      });
+    const child = JSON.parse(createChild.payload) as { id: string };
+    const createSession = await app
+      .getHttpAdapter()
+      .getInstance()
+      .inject({
+        method: 'POST',
+        url: `/api/children/${child.id}/game-sessions`,
+        headers: { ...authHeader(), 'content-type': 'application/json' },
+        payload: {},
+      });
+    const session = JSON.parse(createSession.payload) as { gameSessionId: string };
+
+    const denied = await app
+      .getHttpAdapter()
+      .getInstance()
+      .inject({
+        method: 'GET',
+        url: `/internal/agent/sessions/${session.gameSessionId}/context`,
+      });
+    expect(denied.statusCode).toBe(401);
+
+    const allowed = await app
+      .getHttpAdapter()
+      .getInstance()
+      .inject({
+        method: 'GET',
+        url: `/internal/agent/sessions/${session.gameSessionId}/context`,
+        headers: {
+          authorization: `Bearer ${process.env.VOICE_AGENT_SERVICE_TOKEN}`,
+        },
+      });
+    expect(allowed.statusCode).toBe(200);
+    const body = JSON.parse(allowed.payload) as {
+      childId: string;
+      livekitRoomName: string;
+      conversationSessionId: string;
+    };
+    expect(body.childId).toBe(child.id);
+    expect(body.livekitRoomName).toContain(session.gameSessionId);
+    expect(body.conversationSessionId).toBeTruthy();
+  });
 });

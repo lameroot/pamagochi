@@ -5,6 +5,7 @@ import { ConfigModule } from './config/config.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { GameSessionsModule } from './game-sessions/game-sessions.module.js';
 import { HealthModule } from './health/health.module.js';
+import { InternalModule } from './internal/internal.module.js';
 import { JobsModule } from './jobs/jobs.module.js';
 import { ProfilesModule } from './profiles/profiles.module.js';
 import { StorageModule } from './storage/storage.module.js';
@@ -19,6 +20,7 @@ import { StorageModule } from './storage/storage.module.js';
     HealthModule,
     ProfilesModule,
     GameSessionsModule,
+    InternalModule,
     StorageModule.forRoot(),
   ],
 })
