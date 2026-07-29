@@ -1,5 +1,9 @@
 # Cloudflare Pages — деплой `apps/web`
 
+> **Статус:** проект реально создан и работает — `pamagochi-web`, https://pamagochi-web.pages.dev.
+>
+> ⚠️ Привязать Pages-проект к GitHub-репозиторию **только через API-токен невозможно** — Cloudflare требует одноразовой интерактивной OAuth-авторизации GitHub App в браузере (`Workers & Pages → Create application → Pages → Connect to Git`). Попытка создать git-connected проект через API без этой авторизации возвращает `8000011: internal issue with your Cloudflare Pages Git installation`. Обходной путь (даёт идентичный результат, кроме автотриггера на push): собрать `apps/web` локально/в CI с нужными `VITE_*` переменными и задеплоить через `wrangler pages deploy apps/web/dist --project-name=pamagochi-web`. Чтобы получить полноценный git-based автодеплой на push, кто-то с доступом к аккаунту должен один раз пройти OAuth-привязку в Dashboard.
+
 ## Настройки проекта
 
 | Параметр          | Значение                                                                                     |

@@ -1,5 +1,11 @@
 # Render — деплой `apps/api`
 
+> **Статус:** сервис реально создан и работает — `pamagochi-api`, https://pamagochi-api.onrender.com (Frankfurt, план free). Подробности и найденные особенности API — в `docs/deployment-report.md`.
+>
+> ⚠️ Render **требует привязанную карту оплаты даже для free-плана**, прежде чем разрешает создать сервис через API/Dashboard (`402 Payment information is required`, https://dashboard.render.com/billing). Спишется 0, но карту нужно добавить заранее.
+>
+> ⚠️ При создании сервиса через API поле `serviceDetails.envVars` в `POST /v1/services` **тихо игнорируется** — переменные окружения нужно ставить отдельным запросом `PUT /v1/services/{id}/env-vars` и затем вручную триггерить деплой (`POST /v1/services/{id}/deploys`).
+
 `apps/api` развёртывается в Render как **Web Service** с рантаймом **Docker**, собираемым из существующего `infra/cloud/api.Dockerfile`. Никакой отдельный Docker-контур для Render не создаётся — используется тот же Dockerfile, что и раньше.
 
 ## Настройки сервиса
