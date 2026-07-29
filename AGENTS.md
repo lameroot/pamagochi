@@ -11,12 +11,12 @@ pnpm setup:local
 pnpm dev:local
 ```
 
-Всё, что нужно агенту для локальной разработки — это Node.js 24, pnpm и Docker (только для PostgreSQL). Supabase/Koyeb/Cloudflare **не требуются** для профиля `local`.
+Всё, что нужно агенту для локальной разработки — это Node.js 24, pnpm и Docker (только для PostgreSQL). Supabase/Render/Cloudflare **не требуются** для профиля `local`.
 
 ## Профили
 
 - `APP_PROFILE=local` — автономная работа, без сети. Auth/Storage — локальные реализации.
-- `APP_PROFILE=cloud` — Supabase Auth/Storage/Postgres, деплой в Koyeb/Cloudflare Pages.
+- `APP_PROFILE=cloud` — Supabase Auth/Storage/Postgres, деплой в Render/Cloudflare Pages.
 
 Никогда не смешивать провайдеры между профилями (см. `apps/api/src/config`).
 
@@ -29,7 +29,7 @@ pnpm dev:local
 - `packages/database` — Prisma schema, миграции, клиент, seed.
 - `packages/ui` — общие React-компоненты.
 - `infra/local` — docker-compose для PostgreSQL.
-- `infra/cloud` — Dockerfile для Koyeb и инструкции по Supabase/Cloudflare.
+- `infra/cloud` — Dockerfile для Render и инструкции по Supabase/Cloudflare.
 - `scripts` — Node.js-скрипты оркестрации (без shell-специфичных конструкций).
 
 ## Правила для агентов

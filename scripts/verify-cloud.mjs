@@ -55,12 +55,12 @@ async function main() {
   let createdAssetId;
 
   try {
-    step('Checking Koyeb API liveness');
+    step('Checking cloud API liveness');
     const live = await fetchJson(`${apiUrl}/api/health/live`);
     if (!live.response.ok) throw new Error(`live health check failed (${live.response.status})`);
     ok('Live health OK');
 
-    step('Checking Koyeb API readiness');
+    step('Checking cloud API readiness');
     const ready = await fetchJson(`${apiUrl}/api/health/ready`);
     if (!ready.response.ok || ready.json?.status !== 'ok') {
       throw new Error(`ready health check failed (${ready.response.status})`);

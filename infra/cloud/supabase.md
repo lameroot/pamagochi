@@ -1,11 +1,15 @@
 # Supabase — настройка проекта `pamagochi-dev`
 
+> **Статус:** проект реально настроен и работает — `pamagochi-dev`, ref `hvtvjlpzvetiejrgioek`, регион eu-west-2. Миграции применены, Auth и Storage проверены. Подробности — `docs/deployment-report.md`.
+>
+> ⚠️ Supabase Management API **не имеет эндпоинта для создания S3 Access Keys** (Storage) — единственный способ получить их — Dashboard → Project Settings → Storage → S3 Access Keys → New access key. Это придётся сделать вручную даже при полностью автоматизированной остальной настройке.
+
 Этот документ описывает шаги настройки Supabase для cloud-профиля. Никакие значения credentials здесь не хранятся — только названия и порядок действий.
 
 ## 1. Создание проекта
 
 1. Создать проект `pamagochi-dev` в Supabase Dashboard.
-2. Регион — европейский, согласованный с регионом Koyeb (например, Frankfurt / eu-central).
+2. Регион — европейский, согласованный с регионом Render (например, Frankfurt / eu-central).
 3. Не создавать production-проект в рамках этой задачи без явного запроса.
 
 ## 2. PostgreSQL
