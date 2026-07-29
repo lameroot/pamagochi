@@ -67,23 +67,24 @@ $ prisma migrate deploy (DATABASE_URL=Supabase)  # облако
 ## Известные ограничения
 
 - **Автодеплой Cloudflare Pages при push в GitHub не настроен** — требует одноразовой ручной OAuth-авторизации в Cloudflare Dashboard (см. выше). Сейчас обновление сайта = ручной `pnpm --filter @pamagochi/web build && wrangler pages deploy dist --project-name=pamagochi-web`, либо настройка автосвязки пользователем.
-- **`RENDER_DEPLOY_HOOK_URL` не добавлен в GitHub Secrets** — Render не отдаёт deploy hook URL через публичный API (только Dashboard → Service → Settings → Deploy Hook). Пользователю нужно скопировать его и добавить как GitHub Secret самостоятельно (агент не может писать в GitHub Secrets — `gh` CLI агента доступен только на чтение).
+- ~~`RENDER_DEPLOY_HOOK_URL` не добавлен в GitHub Secrets~~ — **добавлен пользователем и проверен end-to-end**: `deploy-render` job временно запускался на push в feature-ветку (не в `main`), успешно вызвал Render Deploy Hook (`curl` вернул `{"deploy":{"id":"dep-d9ku340u01pc73ehqieg"}}` — реальный новый деплой в Render), после чего временное разрешение отменено и job снова ограничен только push в `main`, как и задумано.
 - Render-сервис сейчас указывает на branch `cursor/render-backend-deploy-d23e` — после мерджа PR #1 и #2 в `main` нужно переключить branch сервиса на `main` (Render Dashboard → Settings → Build & Deploy → Branch), иначе `deploy-render` CI job будет деплоить неактуальную ветку.
 - Docker-образ API — 729 МБ (не оптимизирован дальше `pnpm prune --prod`).
 - `cloud-smoke.yml` (manual GitHub Actions workflow) не запускался — GitHub Secrets для него ещё не добавлены (см. следующий раздел).
 - Тестовый детский профиль, созданный во время `verify:cloud`, оставлен в Supabase (в API намеренно нет `DELETE /api/children/:id` — не входит в текущий скоуп ТЗ); это синтетические данные без персональной информации.
 
-## Что нужно добавить в GitHub Secrets вручную (агент не может сделать это сам)
+## Что ещё нужно добавить в GitHub Secrets вручную (для `cloud-smoke.yml`)
 
-| Секрет                   | Значение                                                                                                                    |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `RENDER_DEPLOY_HOOK_URL` | скопировать из Render Dashboard → `pamagochi-api` → Settings → Deploy Hook                                                  |
-| `CLOUD_API_URL`          | `https://pamagochi-api.onrender.com`                                                                                        |
-| `CLOUD_WEB_URL`          | `https://pamagochi-web.pages.dev`                                                                                           |
-| `CLOUD_TEST_EMAIL`       | `cloud-smoke-test@pamagochi.dev`                                                                                            |
-| `CLOUD_TEST_PASSWORD`    | сгенерирован агентом, передан пользователю отдельно в чате (не хранится в репозитории)                                      |
-| `SUPABASE_URL`           | `https://hvtvjlpzvetiejrgioek.supabase.co`                                                                                  |
-| `SUPABASE_ANON_KEY`      | публичный anon-ключ проекта `pamagochi-dev` (Dashboard → Settings → API Keys), безопасен для публикации по дизайну Supabase |
+`RENDER_DEPLOY_HOOK_URL` уже добавлен и проверен (см. выше). Остальные секреты нужны только для manual workflow `cloud-smoke.yml`:
+
+| Секрет                | Значение                                                                                                                    |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `CLOUD_API_URL`       | `https://pamagochi-api.onrender.com`                                                                                        |
+| `CLOUD_WEB_URL`       | `https://pamagochi-web.pages.dev`                                                                                           |
+| `CLOUD_TEST_EMAIL`    | `cloud-smoke-test@pamagochi.dev`                                                                                            |
+| `CLOUD_TEST_PASSWORD` | сгенерирован агентом, передан пользователю отдельно в чате (не хранится в репозитории)                                      |
+| `SUPABASE_URL`        | `https://hvtvjlpzvetiejrgioek.supabase.co`                                                                                  |
+| `SUPABASE_ANON_KEY`   | публичный anon-ключ проекта `pamagochi-dev` (Dashboard → Settings → API Keys), безопасен для публикации по дизайну Supabase |
 
 ## Credentials, рекомендованные к ротации
 
