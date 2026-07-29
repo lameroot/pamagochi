@@ -59,6 +59,9 @@ jobs:
       - name: Enable Corepack
         run: corepack enable
 
+      - name: Check for leaked secrets in *.example files
+        run: node scripts/check-no-secrets-in-examples.mjs
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 

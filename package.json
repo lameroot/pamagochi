@@ -30,9 +30,10 @@
     "lint": "turbo run lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "check:no-secrets-in-examples": "node scripts/check-no-secrets-in-examples.mjs",
     "e2e:local": "node scripts/run-profile.mjs local e2e",
     "smoke:cloud": "node scripts/verify-cloud.mjs",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "check": "pnpm check:no-secrets-in-examples && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

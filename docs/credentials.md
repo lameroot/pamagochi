@@ -21,6 +21,23 @@
 | Supabase access token / Dashboard доступ                                                         | Администрирование проекта `pamagochi-dev`                                                | Локально у оператора                          | Нет                                                              |
 | GitHub token / integration                                                                       | CI, деплой-интеграции Render/Cloudflare с репозиторием                                   | GitHub App / Actions                          | Нет                                                              |
 
+## ⚠️ Инцидент: утечка реальных credentials в `.env.cloud.example` (обнаружено и исправлено 2026-07-29)
+
+В `.env.cloud.example` в публичном репозитории оказались реальные значения вместо плейсхолдеров: пароль подключения к Supabase PostgreSQL, `SUPABASE_S3_ACCESS_KEY`/`SUPABASE_S3_SECRET_KEY` и `VITE_SUPABASE_ANON_KEY` проекта Supabase `pamagochi` (ref `zainvvtkjvhoasiwdcnd`, регион eu-west-1 — **не** `pamagochi-dev`, который использовался для остальной работы над задачей). Файл содержал эти значения с момента первого коммита в git-историю ветки; репозиторий публичный, поэтому эти значения нужно считать скомпрометированными.
+
+**Что сделано:**
+
+- Значения в `.env.cloud.example` заменены обратно на плейсхолдеры (`replace-me`/`PROJECT_REF`).
+- Добавлена автоматическая проверка `scripts/check-no-secrets-in-examples.mjs`, встроенная в `pnpm check` и в CI (`ci.yml`) — сканирует все `*.example`-файлы на JWT-подобные строки, connection strings с паролем и длинные значения в переменных `*_KEY`/`*_SECRET`/`*_TOKEN`/`*_PASSWORD`, падает при обнаружении.
+- Значения остаются в git-истории веток `cursor/pamagochi-monorepo-skeleton-d23e` и `main` до тех пор, пока история не будет переписана (force-push) — это отдельное, более рискованное действие, которое не выполнялось без явного запроса.
+
+**Требуется от владельца проекта (срочно):**
+
+1. Ротировать пароль database user в Supabase-проекте `pamagochi` (ref `zainvvtkjvhoasiwdcnd`): Dashboard → Project Settings → Database → Reset database password.
+2. Ротировать `SUPABASE_S3_ACCESS_KEY`/`SUPABASE_S3_SECRET_KEY` этого же проекта: Dashboard → Project Settings → Storage → S3 Access Keys → отозвать старый, создать новый.
+3. Опционально — ротировать JWT secret проекта (что инвалидирует все текущие anon/service_role JWT), если проект `pamagochi` содержит что-то чувствительное.
+4. Рассмотреть переписывание git-истории (`git filter-repo`/BFG + force-push) для полного удаления значений из истории — учитывая, что репозиторий публичный, это не отменяет уже случившуюся экспозицию, но снижает риск повторной находки в будущем.
+
 ## Принципы
 
 - Ни одно из значений выше никогда не коммитится в Git, не пишется в issue/PR/commit message, не печатается в build log.
