@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1
 # Root-level convenience copy of infra/cloud/api.Dockerfile, kept for tools
-# that only look for a Dockerfile at the repository root. Koyeb is
+# that only look for a Dockerfile at the repository root. Render is
 # explicitly configured to use infra/cloud/api.Dockerfile as its custom
-# Dockerfile path (see infra/cloud/koyeb.md) — that file is the source of
+# Dockerfile path (see infra/cloud/render.md) — that file is the source of
 # truth; keep both in sync when changing the API build.
 #
 # Build context MUST be the monorepo root so that the root package.json,

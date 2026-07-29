@@ -18,7 +18,7 @@
 
 ```
 VITE_APP_PROFILE=cloud
-VITE_API_URL=<Koyeb API URL>
+VITE_API_URL=<Render API URL>
 VITE_SUPABASE_URL=<Supabase URL>
 VITE_SUPABASE_ANON_KEY=<Supabase anon key>
 ```
@@ -50,7 +50,7 @@ tsconfig.base.json
 
 ## После получения Cloudflare URL
 
-1. Добавить URL в `WEB_ORIGINS` Koyeb.
+1. Добавить URL в `WEB_ORIGINS` в Render Environment.
 2. Добавить URL в Supabase Auth redirect URLs.
 3. Выполнить redeploy API.
 4. Выполнить `pnpm verify:cloud`.

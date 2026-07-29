@@ -1,6 +1,6 @@
 # Памагочи
 
-Образовательная игровая платформа. Монорепозиторий на TypeScript (pnpm + Turborepo), с двумя профилями запуска: `local` (автономная разработка) и `cloud` (Supabase + Koyeb + Cloudflare Pages).
+Образовательная игровая платформа. Монорепозиторий на TypeScript (pnpm + Turborepo), с двумя профилями запуска: `local` (автономная разработка) и `cloud` (Supabase + Render + Cloudflare Pages).
 
 Быстрый локальный старт:
 

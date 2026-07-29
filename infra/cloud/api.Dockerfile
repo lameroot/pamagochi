@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# Build context MUST be the monorepo root (see infra/cloud/koyeb.md) so that
+# Build context MUST be the monorepo root (see infra/cloud/render.md) so that
 # the root package.json, pnpm-lock.yaml, pnpm-workspace.yaml and all
 # workspace packages (contracts, database, game-core) are visible.
 

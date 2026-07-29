@@ -10,7 +10,7 @@ packages/game-core   — чистая игровая логика (без React/
 packages/database    — Prisma schema, миграции, клиент, seed
 packages/ui          — общие React-компоненты
 infra/local          — docker-compose для PostgreSQL
-infra/cloud          — Dockerfile для Koyeb + инструкции Supabase/Cloudflare
+infra/cloud          — Dockerfile для Render + инструкции Supabase/Cloudflare
 scripts              — оркестрация профилей (Node.js, без shell-специфичных конструкций)
 tests/e2e            — Playwright сценарии
 ```

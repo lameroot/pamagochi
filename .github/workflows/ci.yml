@@ -94,3 +94,26 @@ jobs:
 
       - name: Playwright smoke test (local profile)
         run: node scripts/run-profile.mjs local e2e
+
+  # Deploys apps/api to Render, but only for commits that already passed the
+  # full `ci` job above (checkout, install, migrate, format/lint/typecheck,
+  # unit + integration tests, build, Playwright smoke) — Render's own
+  # Auto-Deploy-on-push is disabled for this service; this Deploy Hook call
+  # is the only way a new Render deployment gets triggered. See
+  # infra/cloud/render.md for full setup instructions.
+  deploy-render:
+    name: Deploy apps/api to Render
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy hook
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "RENDER_DEPLOY_HOOK_URL secret is not set — skipping Render deploy." >&2
+            echo "Configure it once the Render service exists (see infra/cloud/render.md)." >&2
+            exit 0
+          fi
+          curl --fail --silent --show-error -X POST "$RENDER_DEPLOY_HOOK_URL"
