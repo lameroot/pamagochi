@@ -3,10 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    # TEMP-TEST: cursor/render-backend-deploy-d23e added only to verify the
-    # newly-added RENDER_DEPLOY_HOOK_URL secret end-to-end without merging
-    # to main. Will be reverted right after the test run.
-    branches: [main, cursor/render-backend-deploy-d23e]
+    branches: [main]
 
 env:
   APP_PROFILE: local
@@ -107,9 +104,7 @@ jobs:
   deploy-render:
     name: Deploy apps/api to Render
     needs: ci
-    # TEMP-TEST: also allow this branch's ref, see note on the `push`
-    # trigger above. Will be reverted right after the test run.
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/cursor/render-backend-deploy-d23e')
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Render deploy hook
