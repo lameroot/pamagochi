@@ -1,0 +1,119 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+env:
+  APP_PROFILE: local
+  NODE_ENV: test
+  API_PORT: 3100
+  WEB_PORT: 5273
+  WEB_ORIGINS: http://localhost:5273
+  VITE_API_URL: http://localhost:3100
+  VITE_APP_PROFILE: local
+  AUTH_PROVIDER: local
+  DEV_AUTH_ENABLED: 'true'
+  DEV_AUTH_SECRET: ci-secret-please-generate-32-bytes-min
+  DEV_USER_ID: 00000000-0000-4000-8000-000000000001
+  DEV_USER_EMAIL: developer@pamagochi.local
+  STORAGE_PROVIDER: filesystem
+  LOCAL_STORAGE_PATH: .data/storage-ci
+  LOCAL_STORAGE_SIGNING_SECRET: ci-secret-please-generate-32-bytes-min
+  JOB_PROVIDER: inline
+  POSTGRES_USER: pamagochi_ci
+  POSTGRES_PASSWORD: pamagochi_ci
+  POSTGRES_DB: pamagochi_ci
+  DATABASE_URL: postgresql://pamagochi_ci:pamagochi_ci@localhost:5432/pamagochi_ci
+  DIRECT_DATABASE_URL: postgresql://pamagochi_ci:pamagochi_ci@localhost:5432/pamagochi_ci
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17.6-bookworm
+        env:
+          POSTGRES_USER: pamagochi_ci
+          POSTGRES_PASSWORD: pamagochi_ci
+          POSTGRES_DB: pamagochi_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pamagochi_ci -d pamagochi_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm --filter @pamagochi/e2e exec playwright install --with-deps chromium
+
+      - name: Prisma generate
+        run: pnpm db:generate
+
+      - name: Prisma migrate deploy
+        run: pnpm --filter @pamagochi/database run prisma:migrate:deploy
+
+      - name: Format check
+        run: pnpm format:check
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+      - name: Seed database
+        run: pnpm --filter @pamagochi/database run prisma:seed
+
+      - name: API integration tests
+        run: pnpm --filter @pamagochi/api run test:integration
+
+      - name: Playwright smoke test (local profile)
+        run: node scripts/run-profile.mjs local e2e
+
+  # Deploys apps/api to Render, but only for commits that already passed the
+  # full `ci` job above (checkout, install, migrate, format/lint/typecheck,
+  # unit + integration tests, build, Playwright smoke) — Render's own
+  # Auto-Deploy-on-push is disabled for this service; this Deploy Hook call
+  # is the only way a new Render deployment gets triggered. See
+  # infra/cloud/render.md for full setup instructions.
+  deploy-render:
+    name: Deploy apps/api to Render
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy hook
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "RENDER_DEPLOY_HOOK_URL secret is not set — skipping Render deploy." >&2
+            echo "Configure it once the Render service exists (see infra/cloud/render.md)." >&2
+            exit 0
+          fi
+          curl --fail --silent --show-error -X POST "$RENDER_DEPLOY_HOOK_URL"

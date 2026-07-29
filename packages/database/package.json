@@ -1,0 +1,34 @@
+{
+  "name": "@pamagochi/database",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "prisma:generate": "prisma generate --schema prisma/schema.prisma",
+    "prisma:migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
+    "prisma:migrate:dev": "prisma migrate dev --schema prisma/schema.prisma",
+    "prisma:seed": "tsx prisma/seed.ts",
+    "prisma:studio": "prisma studio --schema prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@prisma/client": "6.19.3"
+  },
+  "devDependencies": {
+    "prisma": "6.19.3",
+    "tsx": "4.23.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}

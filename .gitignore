@@ -1,0 +1,53 @@
+node_modules/
+.pnpm-store/
+dist/
+build/
+coverage/
+*.log
+npm-debug.log*
+.turbo/
+.DS_Store
+
+# Env files (never commit real secrets)
+.env
+.env.local
+.env.cloud.local
+.env.test
+.env.*.local
+!.env.local.example
+!.env.cloud.example
+!.env.test.example
+
+# Local data / storage
+.data/*
+!.data/storage
+.data/storage/*
+!.data/storage/.gitkeep
+
+# Prisma
+packages/database/prisma/dev.db
+packages/database/generated/
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+apps/web/test-results/
+tests/e2e/test-results/
+tests/e2e/playwright-report/
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Vite
+apps/web/dist/
+apps/web/.vite/
+
+# Nest
+apps/api/dist/
+
+# Misc
+*.tsbuildinfo
+.eslintcache

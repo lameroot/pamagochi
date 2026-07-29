@@ -1,0 +1,117 @@
+// Pamagochi application database schema.
+// Prisma only manages the `public` schema — it must never touch Supabase's
+// `auth`, `storage` or `realtime` schemas.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+enum ChildAvatarKey {
+  fox
+  owl
+  panda
+  dragon
+}
+
+enum SkillKey {
+  counting
+  reading
+  colors
+  shapes
+}
+
+enum QuestStatus {
+  available
+  in_progress
+  completed
+}
+
+enum AssetOwnerKind {
+  parent
+  child
+}
+
+enum AssetStatus {
+  pending
+  completed
+}
+
+/// A parent (adult) account. `authSubject` is the verified `sub` claim from
+/// the active IdentityProvider (local dev JWT or Supabase JWT) — never a
+/// hard foreign key into Supabase's own `auth.users` table.
+model ParentAccount {
+  id          String   @id @default(cuid())
+  authSubject String   @unique
+  email       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  children ChildProfile[]
+
+  @@map("parent_accounts")
+}
+
+model ChildProfile {
+  id          String         @id @default(cuid())
+  parentId    String
+  parent      ParentAccount  @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  displayName String
+  avatarKey   ChildAvatarKey
+  birthYear   Int?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  skills SkillProgress[]
+  quests QuestProgress[]
+
+  @@index([parentId])
+  @@map("child_profiles")
+}
+
+model SkillProgress {
+  id         String       @id @default(cuid())
+  childId    String
+  child      ChildProfile @relation(fields: [childId], references: [id], onDelete: Cascade)
+  skillKey   SkillKey
+  level      Int          @default(0)
+  experience Int          @default(0)
+  updatedAt  DateTime     @updatedAt
+
+  @@unique([childId, skillKey])
+  @@map("skill_progress")
+}
+
+model QuestProgress {
+  id        String       @id @default(cuid())
+  childId   String
+  child     ChildProfile @relation(fields: [childId], references: [id], onDelete: Cascade)
+  questKey  String
+  status    QuestStatus  @default(available)
+  score     Int          @default(0)
+  updatedAt DateTime     @updatedAt
+
+  @@unique([childId, questKey])
+  @@map("quest_progress")
+}
+
+/// Ownership-tagged file metadata. `ownerId` refers either to a
+/// ParentAccount.id or a ChildProfile.id, discriminated by `ownerKind`.
+model StoredAsset {
+  id        String         @id @default(cuid())
+  ownerKind AssetOwnerKind
+  ownerId   String
+  key       String         @unique
+  mimeType  String
+  sizeBytes Int
+  status    AssetStatus    @default(pending)
+  createdAt DateTime       @default(now())
+
+  @@index([ownerKind, ownerId])
+  @@map("stored_assets")
+}
