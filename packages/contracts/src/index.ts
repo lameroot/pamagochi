@@ -8,3 +8,4 @@ export * from './asset.js';
 export * from './scene-spec.js';
 export * from './meta.js';
 export * from './game-bridge.js';
+export * from './voice/index.js';

@@ -17,4 +17,11 @@ export function applyLocalTestEnv(): void {
   process.env.DATABASE_URL =
     process.env.DATABASE_URL ??
     'postgresql://pamagochi_test:pamagochi_test@localhost:5433/pamagochi_test';
+  process.env.LIVEKIT_URL = process.env.LIVEKIT_URL ?? 'wss://example.livekit.cloud';
+  process.env.LIVEKIT_API_KEY = process.env.LIVEKIT_API_KEY ?? 'devkey';
+  process.env.LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET ?? 'secret'.padEnd(32, 'x');
+  process.env.VOICE_AGENT_SERVICE_TOKEN =
+    process.env.VOICE_AGENT_SERVICE_TOKEN ?? 'test-voice-agent-service-token-32b';
+  process.env.VOICE_MAX_CONCURRENT_SESSIONS_PER_CHILD =
+    process.env.VOICE_MAX_CONCURRENT_SESSIONS_PER_CHILD ?? '1';
 }

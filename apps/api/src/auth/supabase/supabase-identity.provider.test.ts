@@ -33,6 +33,7 @@ describe('SupabaseIdentityProvider (mock JWKS)', () => {
 
     process.env.APP_PROFILE = 'cloud';
     process.env.AUTH_PROVIDER = 'supabase';
+    process.env.DEV_AUTH_ENABLED = 'false';
     process.env.WEB_ORIGINS = 'http://localhost:5173';
     process.env.STORAGE_PROVIDER = 'supabase-s3';
     process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/db';

@@ -17,6 +17,8 @@ pnpm dev:local
 
 `pnpm dev:local` запускает `apps/api` и `apps/web` параллельно на хосте (см. `scripts/run-profile.mjs`).
 
+Каркас голосового среза: см. [voice-agent-local.md](./voice-agent-local.md) (`apps/game`, `apps/parent`, `apps/voice-agent`).
+
 ## Как остановить
 
 ```bash

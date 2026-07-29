@@ -170,4 +170,73 @@ describe('API integration', () => {
     });
     expect(completedAsset?.status).toBe('completed');
   });
+
+  it('creates a limited game session and bootstraps LiveKit without parent JWT', async () => {
+    const createChild = await app
+      .getHttpAdapter()
+      .getInstance()
+      .inject({
+        method: 'POST',
+        url: '/api/children',
+        headers: { ...authHeader(), 'content-type': 'application/json' },
+        payload: { displayName: 'Voice Kid', avatarKey: 'fox', birthYear: 2019 },
+      });
+    expect([200, 201]).toContain(createChild.statusCode);
+    const child = JSON.parse(createChild.payload) as { id: string };
+
+    const createSession = await app
+      .getHttpAdapter()
+      .getInstance()
+      .inject({
+        method: 'POST',
+        url: `/api/children/${child.id}/game-sessions`,
+        headers: { ...authHeader(), 'content-type': 'application/json' },
+        payload: { deviceId: 'test-device' },
+      });
+    expect([200, 201]).toContain(createSession.statusCode);
+    const session = JSON.parse(createSession.payload) as {
+      gameSessionId: string;
+      limitedGameToken: string;
+    };
+    expect(session.limitedGameToken).toBeTruthy();
+
+    const bootstrap = await app
+      .getHttpAdapter()
+      .getInstance()
+      .inject({
+        method: 'POST',
+        url: '/api/game/bootstrap',
+        headers: { 'content-type': 'application/json' },
+        payload: { limitedGameToken: session.limitedGameToken },
+      });
+    expect(bootstrap.statusCode).toBe(200);
+    const boot = JSON.parse(bootstrap.payload) as {
+      child: { ageBand: string; displayName: string };
+      livekit: { url: string; token: string; roomName: string };
+    };
+    expect(boot.child.ageBand).toBe('6-8');
+    expect(boot.livekit.token.split('.').length).toBe(3);
+    expect(boot.livekit.roomName).toContain(session.gameSessionId);
+
+    const revoked = await app
+      .getHttpAdapter()
+      .getInstance()
+      .inject({
+        method: 'POST',
+        url: `/api/children/game-sessions/${session.gameSessionId}/revoke`,
+        headers: authHeader(),
+      });
+    expect([200, 201]).toContain(revoked.statusCode);
+
+    const bootstrapRevoked = await app
+      .getHttpAdapter()
+      .getInstance()
+      .inject({
+        method: 'POST',
+        url: '/api/game/bootstrap',
+        headers: { 'content-type': 'application/json' },
+        payload: { limitedGameToken: session.limitedGameToken },
+      });
+    expect(bootstrapRevoked.statusCode).toBe(403);
+  });
 });

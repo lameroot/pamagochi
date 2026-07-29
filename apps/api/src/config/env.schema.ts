@@ -45,6 +45,22 @@ const rawEnvSchema = z.object({
   SUPABASE_S3_ACCESS_KEY: z.string().optional(),
   SUPABASE_S3_SECRET_KEY: z.string().optional(),
 
+  // Voice / LiveKit (server-only). Optional until voice routes are exercised.
+  LIVEKIT_URL: z.string().url().optional(),
+  LIVEKIT_API_KEY: z.string().optional(),
+  LIVEKIT_API_SECRET: z.string().optional(),
+  VOICE_AGENT_SERVICE_TOKEN: z.string().optional(),
+  TRANSCRIPT_STORAGE_ENABLED: booleanFromString,
+  AUDIO_RECORDING_ENABLED: booleanFromString,
+  MEMORY_EXTRACTION_ENABLED: booleanFromString,
+  MEMORY_MAX_ACTIVE_ITEMS: z.coerce.number().int().positive().optional(),
+  MEMORY_MIN_CONFIDENCE: z.coerce.number().min(0).max(1).optional(),
+  VOICE_SESSION_MAX_DURATION_SECONDS: z.coerce.number().int().positive().optional(),
+  VOICE_SESSION_IDLE_TIMEOUT_SECONDS: z.coerce.number().int().positive().optional(),
+  VOICE_MAX_CONCURRENT_SESSIONS_PER_CHILD: z.coerce.number().int().positive().optional(),
+  VOICE_DAILY_BUDGET_USD_PER_CHILD: z.coerce.number().positive().optional(),
+  VOICE_GLOBAL_DAILY_BUDGET_USD: z.coerce.number().positive().optional(),
+
   GIT_COMMIT_SHA: z.string().optional(),
   BUILD_TIME: z.string().optional(),
 });
@@ -123,6 +139,32 @@ function assertForbiddenCombinations(env: RawEnv, warnings: string[]): string[] 
     for (const key of requiredForSupabaseStorage) {
       if (!env[key]) errors.push(`STORAGE_PROVIDER=supabase-s3 requires ${key} to be set`);
     }
+  }
+
+  const livekitAny =
+    Boolean(env.LIVEKIT_URL) || Boolean(env.LIVEKIT_API_KEY) || Boolean(env.LIVEKIT_API_SECRET);
+  if (livekitAny) {
+    if (!env.LIVEKIT_URL) errors.push('LIVEKIT_URL is required when LiveKit is configured');
+    if (!env.LIVEKIT_API_KEY) errors.push('LIVEKIT_API_KEY is required when LiveKit is configured');
+    if (!env.LIVEKIT_API_SECRET) {
+      errors.push('LIVEKIT_API_SECRET is required when LiveKit is configured');
+    }
+    if (env.LIVEKIT_URL && !env.LIVEKIT_URL.startsWith('ws')) {
+      errors.push('LIVEKIT_URL must use ws:// or wss://');
+    }
+  }
+
+  if (
+    env.VOICE_AGENT_SERVICE_TOKEN &&
+    Buffer.byteLength(env.VOICE_AGENT_SERVICE_TOKEN, 'utf8') < 32
+  ) {
+    errors.push('VOICE_AGENT_SERVICE_TOKEN must be at least 32 bytes long');
+  }
+
+  if (env.AUDIO_RECORDING_ENABLED) {
+    warnings.push(
+      'AUDIO_RECORDING_ENABLED=true requires active parent consent and child policy at runtime; default remains false.',
+    );
   }
 
   return errors;

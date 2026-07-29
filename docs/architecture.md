@@ -57,3 +57,18 @@ tests/e2e            — Playwright сценарии
 ## Безопасность LLM-контента
 
 `packages/contracts/src/scene-spec.ts` определяет `SceneSpec` — единственный формат, в котором LLM-контент может повлиять на игру. Это данные, а не код: allowlist `assetKey`, ограничение размера (16 KiB) и количества объектов (40), строгая Zod-валидация. Сгенерированный LLM код никогда не исполняется.
+
+## Голосовой агент (E0+)
+
+Целевое разделение приложений зафиксировано в [ADR 0001](./adr/0001-livekit-and-application-boundaries.md):
+
+- `apps/game` — Phaser детский клиент
+- `apps/parent` — React кабинет родителя
+- `apps/voice-agent` — LiveKit STT→LLM→TTS runtime
+- `apps/api` — ownership, tokens, transcript, memory, tool validation
+
+Дополнительно: [threat model](./threat-model-voice-session.md), [data-flow](./data-flow-voice-session.md),
+[data model](./data-model-voice.md), [local voice docs](./voice-agent-local.md).
+
+Новые packages: `game-protocol`, `agent-core`, `safety-contracts`. Контракты голоса —
+в `packages/contracts/src/voice`.

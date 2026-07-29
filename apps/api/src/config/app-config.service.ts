@@ -103,4 +103,27 @@ export class AppConfigService {
   get buildTime(): string {
     return this.env.BUILD_TIME ?? 'unknown';
   }
+
+  get livekitUrl(): string | undefined {
+    return this.env.LIVEKIT_URL;
+  }
+
+  get livekitCredentials(): { apiKey?: string; apiSecret?: string } {
+    return {
+      apiKey: this.env.LIVEKIT_API_KEY,
+      apiSecret: this.env.LIVEKIT_API_SECRET,
+    };
+  }
+
+  get voiceAgentServiceToken(): string | undefined {
+    return this.env.VOICE_AGENT_SERVICE_TOKEN;
+  }
+
+  get voiceSessionMaxDurationSeconds(): number {
+    return this.env.VOICE_SESSION_MAX_DURATION_SECONDS ?? 1800;
+  }
+
+  get voiceMaxConcurrentSessionsPerChild(): number {
+    return this.env.VOICE_MAX_CONCURRENT_SESSIONS_PER_CHILD ?? 1;
+  }
 }

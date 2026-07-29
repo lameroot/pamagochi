@@ -3,6 +3,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { DevLoginModule } from './auth/local/dev-login.module.js';
 import { ConfigModule } from './config/config.module.js';
 import { DatabaseModule } from './database/database.module.js';
+import { GameSessionsModule } from './game-sessions/game-sessions.module.js';
 import { HealthModule } from './health/health.module.js';
 import { JobsModule } from './jobs/jobs.module.js';
 import { ProfilesModule } from './profiles/profiles.module.js';
@@ -17,6 +18,7 @@ import { StorageModule } from './storage/storage.module.js';
     DevLoginModule.forRoot(),
     HealthModule,
     ProfilesModule,
+    GameSessionsModule,
     StorageModule.forRoot(),
   ],
 })

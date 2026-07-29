@@ -42,6 +42,105 @@ enum AssetStatus {
   completed
 }
 
+enum GameSessionStatus {
+  pending
+  active
+  expired
+  revoked
+  completed
+}
+
+enum ConversationSessionStatus {
+  active
+  finalizing
+  completed
+  failed
+  cancelled
+}
+
+enum ConversationSpeaker {
+  child
+  agent
+  system_event
+}
+
+enum ToolValidationResult {
+  accepted
+  rejected_schema
+  rejected_allowlist
+  rejected_state
+  rejected_ownership
+  rejected_rate_limit
+  rejected_timeout
+  rejected_unknown_tool
+}
+
+enum MemoryCategory {
+  interest
+  preference
+  achievement
+  relationship_event
+  favorite_game_object
+  learning_preference
+  parent_note
+}
+
+enum MemoryItemStatus {
+  active
+  disabled
+  deleted
+}
+
+enum MemorySource {
+  automatic
+  parent
+}
+
+enum MemoryChangedBy {
+  system
+  parent
+}
+
+enum RelationshipStage {
+  first_meeting
+  acquainted
+  friends
+  close_friends
+}
+
+enum SafetySeverity {
+  low
+  medium
+  high
+  critical
+}
+
+enum SafetyCategory {
+  prompt_injection
+  prompt_extraction
+  tool_escalation
+  memory_poisoning
+  pii
+  harmful_content
+  external_contact
+  secrecy_from_parents
+  cost_exhaustion
+  output_policy
+  other
+}
+
+enum PromptVersionKind {
+  soul
+  safety
+  runtime_template
+}
+
+enum PromptVersionStatus {
+  draft
+  active
+  retired
+}
+
 /// A parent (adult) account. `authSubject` is the verified `sub` claim from
 /// the active IdentityProvider (local dev JWT or Supabase JWT) — never a
 /// hard foreign key into Supabase's own `auth.users` table.
@@ -52,25 +151,40 @@ model ParentAccount {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  children ChildProfile[]
+  children         ChildProfile[]
+  gameSessions     GameSession[]     @relation("GameSessionCreatedBy")
+  privacyConsents  PrivacyConsent[]
+  promptVersions   AgentPromptVersion[]
 
   @@map("parent_accounts")
 }
 
 model ChildProfile {
-  id          String         @id @default(cuid())
-  parentId    String
-  parent      ParentAccount  @relation(fields: [parentId], references: [id], onDelete: Cascade)
-  displayName String
-  avatarKey   ChildAvatarKey
-  birthYear   Int?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id               String         @id @default(cuid())
+  parentId         String
+  parent           ParentAccount  @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  displayName      String
+  avatarKey        ChildAvatarKey
+  birthYear        Int?
+  birthDate        DateTime?
+  primaryLanguage  String         @default("ru")
+  readingLevel     String?
+  mathLevel        String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  deletedAt        DateTime?
 
-  skills SkillProgress[]
-  quests QuestProgress[]
+  skills                SkillProgress[]
+  quests                QuestProgress[]
+  gameSessions          GameSession[]
+  conversationSessions  ConversationSession[]
+  memoryItems           MemoryItem[]
+  relationshipState     RelationshipState?
+  safetyEvents          SafetyEvent[]
+  privacyConsents       PrivacyConsent[]
 
   @@index([parentId])
+  @@index([deletedAt])
   @@map("child_profiles")
 }
 
@@ -114,4 +228,204 @@ model StoredAsset {
 
   @@index([ownerKind, ownerId])
   @@map("stored_assets")
+}
+
+model GameSession {
+  id                 String            @id @default(cuid())
+  childId            String
+  child              ChildProfile      @relation(fields: [childId], references: [id], onDelete: Cascade)
+  deviceId           String?
+  tokenHash          String            @unique
+  status             GameSessionStatus @default(pending)
+  expiresAt          DateTime
+  revokedAt          DateTime?
+  createdByParentId  String
+  createdByParent    ParentAccount     @relation("GameSessionCreatedBy", fields: [createdByParentId], references: [id], onDelete: Cascade)
+  createdAt          DateTime          @default(now())
+
+  conversationSessions ConversationSession[]
+
+  @@index([childId, status])
+  @@index([createdByParentId])
+  @@map("game_sessions")
+}
+
+model ConversationSession {
+  id                   String                     @id @default(cuid())
+  childId              String
+  child                ChildProfile               @relation(fields: [childId], references: [id], onDelete: Cascade)
+  gameSessionId        String
+  gameSession          GameSession                @relation(fields: [gameSessionId], references: [id], onDelete: Cascade)
+  livekitRoomId        String
+  startedAt            DateTime                   @default(now())
+  endedAt              DateTime?
+  status               ConversationSessionStatus  @default(active)
+  soulVersion          String?
+  safetyPolicyVersion  String?
+  llmProvider          String?
+  llmModel             String?
+  sttProvider          String?
+  ttsProvider          String?
+  sessionSummary       String?
+  safetyLevel          String?
+  costInputTokens      Int                        @default(0)
+  costOutputTokens     Int                        @default(0)
+  costTtsChars         Int                        @default(0)
+  costSttSeconds       Int                        @default(0)
+
+  turns       ConversationTurn[]
+  toolCalls   AgentToolCall[]
+  safetyEvents SafetyEvent[]
+  memoryItems MemoryItem[]
+
+  @@index([childId, startedAt])
+  @@index([gameSessionId])
+  @@map("conversation_sessions")
+}
+
+model ConversationTurn {
+  id                     String               @id @default(cuid())
+  conversationSessionId  String
+  conversationSession    ConversationSession  @relation(fields: [conversationSessionId], references: [id], onDelete: Cascade)
+  sequenceNo             Int
+  speaker                ConversationSpeaker
+  text                   String
+  startedAt              DateTime
+  endedAt                DateTime?
+  wasInterrupted         Boolean              @default(false)
+  playedTextLength       Int?
+  safetyFlags            String[]             @default([])
+  metadataJson           Json                 @default("{}")
+  idempotencyKey         String?
+  createdAt              DateTime             @default(now())
+
+  toolCalls    AgentToolCall[]
+  safetyEvents SafetyEvent[]
+
+  @@unique([conversationSessionId, sequenceNo])
+  @@unique([conversationSessionId, idempotencyKey])
+  @@map("conversation_turns")
+}
+
+model AgentToolCall {
+  id                     String                @id @default(cuid())
+  conversationSessionId  String
+  conversationSession    ConversationSession   @relation(fields: [conversationSessionId], references: [id], onDelete: Cascade)
+  turnId                 String?
+  turn                   ConversationTurn?     @relation(fields: [turnId], references: [id], onDelete: SetNull)
+  toolName               String
+  argumentsJson          Json
+  validationResult       ToolValidationResult
+  resultJson             Json
+  createdAt              DateTime              @default(now())
+
+  @@index([conversationSessionId, createdAt])
+  @@map("agent_tool_calls")
+}
+
+model MemoryItem {
+  id               String           @id @default(cuid())
+  childId          String
+  child            ChildProfile     @relation(fields: [childId], references: [id], onDelete: Cascade)
+  category         MemoryCategory
+  fact             String
+  status           MemoryItemStatus @default(active)
+  source           MemorySource
+  confidence       Float
+  priority         Int              @default(0)
+  pinned           Boolean          @default(false)
+  sourceSessionId  String?
+  sourceSession    ConversationSession? @relation(fields: [sourceSessionId], references: [id], onDelete: SetNull)
+  sourceTurnIds    String[]         @default([])
+  reviewAfter      DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  deletedAt        DateTime?
+
+  versions MemoryVersion[]
+
+  @@index([childId, status])
+  @@index([childId, pinned])
+  @@map("memory_items")
+}
+
+model MemoryVersion {
+  id              String          @id @default(cuid())
+  memoryItemId    String
+  memoryItem      MemoryItem      @relation(fields: [memoryItemId], references: [id], onDelete: Cascade)
+  previousFact    String?
+  newFact         String
+  changedBy       MemoryChangedBy
+  changedByUserId String?
+  reason          String?
+  createdAt       DateTime        @default(now())
+
+  @@index([memoryItemId, createdAt])
+  @@map("memory_versions")
+}
+
+model RelationshipState {
+  childId          String            @id
+  child            ChildProfile      @relation(fields: [childId], references: [id], onDelete: Cascade)
+  stage            RelationshipStage @default(first_meeting)
+  trustProgress    Float             @default(0)
+  sharedEventsJson Json              @default("[]")
+  lastSessionAt    DateTime?
+  updatedAt        DateTime          @updatedAt
+
+  @@map("relationship_state")
+}
+
+model SafetyEvent {
+  id                     String               @id @default(cuid())
+  childId                String
+  child                  ChildProfile         @relation(fields: [childId], references: [id], onDelete: Cascade)
+  conversationSessionId  String?
+  conversationSession    ConversationSession? @relation(fields: [conversationSessionId], references: [id], onDelete: SetNull)
+  turnId                 String?
+  turn                   ConversationTurn?    @relation(fields: [turnId], references: [id], onDelete: SetNull)
+  category               SafetyCategory
+  severity               SafetySeverity
+  detectedBy             String
+  inputExcerpt           String?
+  actionTaken            String
+  parentVisible          Boolean              @default(true)
+  createdAt              DateTime             @default(now())
+
+  @@index([childId, createdAt])
+  @@map("safety_events")
+}
+
+model PrivacyConsent {
+  id            String         @id @default(cuid())
+  parentUserId  String
+  parent        ParentAccount  @relation(fields: [parentUserId], references: [id], onDelete: Cascade)
+  childId       String
+  child         ChildProfile   @relation(fields: [childId], references: [id], onDelete: Cascade)
+  consentType   String
+  version       String
+  grantedAt     DateTime       @default(now())
+  revokedAt     DateTime?
+  metadataJson  Json           @default("{}")
+
+  @@index([childId, consentType])
+  @@index([parentUserId])
+  @@map("privacy_consents")
+}
+
+model AgentPromptVersion {
+  id               String              @id @default(cuid())
+  kind             PromptVersionKind
+  semanticVersion  String
+  content          String
+  checksum         String
+  status           PromptVersionStatus @default(draft)
+  createdAt        DateTime            @default(now())
+  createdById      String?
+  createdBy        ParentAccount?      @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  releaseNotes     String?
+
+  @@unique([kind, semanticVersion])
+  @@index([kind, status])
+  @@map("agent_prompt_versions")
 }

@@ -21,6 +21,13 @@
 | Supabase access token / Dashboard доступ                                                         | Администрирование проекта `pamagochi-dev`                                                | Локально у оператора                          | Нет                                                              |
 | GitHub token / integration                                                                       | CI, деплой-интеграции Render/Cloudflare с репозиторием                                   | GitHub App / Actions                          | Нет                                                              |
 
+| `LIVEKIT_URL` / `LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET` | LiveKit Cloud: URL и серверные ключи для mint room tokens и voice-agent | `.env.local` / Cursor secrets / Render env | Нет (кроме URL, который отдаётся game через bootstrap) |
+| `LIVEKIT_AGENT_NAME` | Имя агента в LiveKit | env voice-agent | Да (не секрет) |
+| `VOICE_AGENT_SERVICE_TOKEN` | Service-to-service auth voice-agent → api internal routes | api + voice-agent env only | Нет |
+| `DEEPGRAM_API_KEY` | Streaming STT | voice-agent env only | Нет |
+| `DEEPSEEK_API_KEY` | LLM (OpenAI-compatible) | voice-agent env only | Нет |
+| `ELEVENLABS_API_KEY` / `ELEVENLABS_VOICE_ID` | TTS | voice-agent env only | Нет |
+
 ## ⚠️ Инцидент: утечка реальных credentials в `.env.cloud.example` (обнаружено и исправлено 2026-07-29)
 
 В `.env.cloud.example` в публичном репозитории оказались реальные значения вместо плейсхолдеров: пароль подключения к Supabase PostgreSQL, `SUPABASE_S3_ACCESS_KEY`/`SUPABASE_S3_SECRET_KEY` и `VITE_SUPABASE_ANON_KEY` проекта Supabase `pamagochi` (ref `zainvvtkjvhoasiwdcnd`, регион eu-west-1 — **не** `pamagochi-dev`, который использовался для остальной работы над задачей). Файл содержал эти значения с момента первого коммита в git-историю ветки; репозиторий публичный, поэтому эти значения нужно считать скомпрометированными.

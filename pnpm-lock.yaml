@@ -95,6 +95,9 @@ importers:
       jsonwebtoken:
         specifier: 9.0.3
         version: 9.0.3
+      livekit-server-sdk:
+        specifier: ^2.17.0
+        version: 2.17.0
       nanoid:
         specifier: 6.0.0
         version: 6.0.0
@@ -120,6 +123,111 @@ importers:
       supertest:
         specifier: 7.2.2
         version: 7.2.2
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: 4.1.10
+        version: 4.1.10(@types/node@24.13.3)(jsdom@30.0.0(@noble/hashes@1.8.0))(vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.1))
+
+  apps/game:
+    dependencies:
+      '@pamagochi/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@pamagochi/game-core':
+        specifier: workspace:*
+        version: link:../../packages/game-core
+      '@pamagochi/game-protocol':
+        specifier: workspace:*
+        version: link:../../packages/game-protocol
+      phaser:
+        specifier: 4.2.1
+        version: 4.2.1
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
+    devDependencies:
+      jsdom:
+        specifier: 30.0.0
+        version: 30.0.0(@noble/hashes@1.8.0)
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+      vite:
+        specifier: 8.1.5
+        version: 8.1.5(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.1)
+      vitest:
+        specifier: 4.1.10
+        version: 4.1.10(@types/node@24.13.3)(jsdom@30.0.0(@noble/hashes@1.8.0))(vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.1))
+
+  apps/parent:
+    dependencies:
+      '@pamagochi/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@pamagochi/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      react:
+        specifier: 19.2.8
+        version: 19.2.8
+      react-dom:
+        specifier: 19.2.8
+        version: 19.2.8(react@19.2.8)
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@types/react':
+        specifier: 19.2.17
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: 19.2.3
+        version: 19.2.3(@types/react@19.2.17)
+      '@vitejs/plugin-react':
+        specifier: 6.0.4
+        version: 6.0.4(vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.1))
+      jsdom:
+        specifier: 30.0.0
+        version: 30.0.0(@noble/hashes@1.8.0)
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+      vite:
+        specifier: 8.1.5
+        version: 8.1.5(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.1)
+      vitest:
+        specifier: 4.1.10
+        version: 4.1.10(@types/node@24.13.3)(jsdom@30.0.0(@noble/hashes@1.8.0))(vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.1))
+
+  apps/voice-agent:
+    dependencies:
+      '@pamagochi/agent-core':
+        specifier: workspace:*
+        version: link:../../packages/agent-core
+      '@pamagochi/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@pamagochi/game-protocol':
+        specifier: workspace:*
+        version: link:../../packages/game-protocol
+      '@pamagochi/safety-contracts':
+        specifier: workspace:*
+        version: link:../../packages/safety-contracts
+      dotenv:
+        specifier: 17.4.2
+        version: 17.4.2
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@types/node':
+        specifier: 24.13.3
+        version: 24.13.3
+      tsx:
+        specifier: 4.23.1
+        version: 4.23.1
       typescript:
         specifier: 5.9.3
         version: 5.9.3
@@ -194,6 +302,22 @@ importers:
         specifier: 4.1.10
         version: 4.1.10(@types/node@24.13.3)(jsdom@30.0.0(@noble/hashes@1.8.0))(vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.1))
 
+  packages/agent-core:
+    dependencies:
+      '@pamagochi/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
+    devDependencies:
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: 4.1.10
+        version: 4.1.10(@types/node@24.13.3)(jsdom@30.0.0(@noble/hashes@1.8.0))(vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.1))
+
   packages/contracts:
     dependencies:
       zod:
@@ -227,6 +351,38 @@ importers:
         version: 4.1.10(@types/node@24.13.3)(jsdom@30.0.0(@noble/hashes@1.8.0))(vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.1))
 
   packages/game-core:
+    devDependencies:
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: 4.1.10
+        version: 4.1.10(@types/node@24.13.3)(jsdom@30.0.0(@noble/hashes@1.8.0))(vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.1))
+
+  packages/game-protocol:
+    dependencies:
+      '@pamagochi/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
+    devDependencies:
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: 4.1.10
+        version: 4.1.10(@types/node@24.13.3)(jsdom@30.0.0(@noble/hashes@1.8.0))(vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.1))
+
+  packages/safety-contracts:
+    dependencies:
+      '@pamagochi/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
     devDependencies:
       typescript:
         specifier: 5.9.3
@@ -381,6 +537,9 @@ packages:
   '@bramus/specificity@2.4.2':
     resolution: {integrity: sha512-ctxtJ/eA+t+6q2++vj5j7FYX3nRu311q1wfYH3xjlLOsczhlhxAg2FWNUXhpGvAw3BWo1xBcvOV6/YLc2r5FJw==}
     hasBin: true
+
+  '@bufbuild/protobuf@1.10.1':
+    resolution: {integrity: sha512-wJ8ReQbHxsAfXhrf9ixl0aYbZorRuOWpBNzm8pL8ftmSxQx/wnJD5Eg861NwJU/czy2VXFIebCeZnZrI9rktIQ==}
 
   '@csstools/color-helpers@6.1.0':
     resolution: {integrity: sha512-064IFJdjTfUqnjpCVpMOdbr8FLQBhinbZj6yRv2An2E41O/pLEXqfFRWqGq/SxlE5PEUYTlvWsG2r8MswAVvkg==}
@@ -695,6 +854,9 @@ packages:
 
   '@jridgewell/sourcemap-codec@1.5.5':
     resolution: {integrity: sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==}
+
+  '@livekit/protocol@1.50.4':
+    resolution: {integrity: sha512-L1uggNQAqyY21smQY8AllyOYbcv9Me9TaxwuLytL1R8ck9nbYPmQLNwEDi3pOFGAMa5F8I2nUi2Jc59W5awxlA==}
 
   '@lukeed/csprng@1.1.0':
     resolution: {integrity: sha512-Z7C/xXCiGWsg0KuKsHTKJxbWhpI3Vs5GwLfOean7MGyVFGqdRgBbAjOCh6u4bbjPc/8MJ2pZmK/0DLdCbivLDA==}
@@ -1751,6 +1913,9 @@ packages:
     resolution: {integrity: sha512-AC/7JofJvZGrrneWNaEnJeOLUx+JlGt7tNa0wZiRPT4MY1wmfKjt2+6O2p2uz2+skll8OZZmJMNqeke7kKbNgQ==}
     hasBin: true
 
+  jose@5.10.0:
+    resolution: {integrity: sha512-s+3Al/p9g32Iq+oqXxkW//7jk2Vig6FF1CFqzVXoTUXt2qz89YWbL+OwS17NFYEvxC35n0FKeGO2LGYSxeM2Gg==}
+
   jose@6.2.4:
     resolution: {integrity: sha512-N8acGzVsQy6M/fjFcxtysNc4Q379TcM5dM/qKkNtsHFji88yANnXTr7BLeP75iPnFwBfQzM/jg2BZ9+HZrHCZA==}
 
@@ -1874,6 +2039,10 @@ packages:
   lightningcss@1.33.0:
     resolution: {integrity: sha512-WkUDrojuJs0xkgGf2udWxa3yGBRxPtxUkB79i6aCZLRgc7PM8fZe9TosfPDcvEpQZbuFASnHYmRLBLUbmLOIIA==}
     engines: {node: '>= 12.0.0'}
+
+  livekit-server-sdk@2.17.0:
+    resolution: {integrity: sha512-GWNEQrUD13UwZNrmosyTVFPgeBvSU2lFKGxdA4DaUI5F4sMb1cGeep/PPEE9vvRNELJYpxWS0ImS4gQmovKUDA==}
+    engines: {node: '>=18'}
 
   load-esm@1.0.3:
     resolution: {integrity: sha512-v5xlu8eHD1+6r8EHTg6hfmO97LN8ugKtiXcy5e6oN72iD2r6u0RPfLl6fxM+7Wnh2ZRq15o0russMst44WauPA==}
@@ -2805,6 +2974,8 @@ snapshots:
     dependencies:
       css-tree: 3.2.1
 
+  '@bufbuild/protobuf@1.10.1': {}
+
   '@csstools/color-helpers@6.1.0': {}
 
   '@csstools/css-calc@3.3.0(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)':
@@ -3046,6 +3217,10 @@ snapshots:
   '@humanwhocodes/retry@0.4.3': {}
 
   '@jridgewell/sourcemap-codec@1.5.5': {}
+
+  '@livekit/protocol@1.50.4':
+    dependencies:
+      '@bufbuild/protobuf': 1.10.1
 
   '@lukeed/csprng@1.1.0': {}
 
@@ -4090,6 +4265,8 @@ snapshots:
 
   jiti@2.7.0: {}
 
+  jose@5.10.0: {}
+
   jose@6.2.4: {}
 
   js-tokens@4.0.0: {}
@@ -4223,6 +4400,12 @@ snapshots:
       lightningcss-linux-x64-musl: 1.33.0
       lightningcss-win32-arm64-msvc: 1.33.0
       lightningcss-win32-x64-msvc: 1.33.0
+
+  livekit-server-sdk@2.17.0:
+    dependencies:
+      '@bufbuild/protobuf': 1.10.1
+      '@livekit/protocol': 1.50.4
+      jose: 5.10.0
 
   load-esm@1.0.3: {}
 
