@@ -1,0 +1,28 @@
+{
+    "id": "f8424111-58eb-445a-8617-09144cbbadd7",
+    "sceneType": "PREFAB",
+    "settings": {
+        "preloadMethodName": "",
+        "preloadPackFiles": [],
+        "createMethodName": ""
+    },
+    "displayList": [
+        {
+            "type": "Image",
+            "id": "8ff9d912-e474-4daa-adba-625a8bf08a70",
+            "label": "eggImage",
+            "scope": "PUBLIC",
+            "texture": {
+                "key": "pamagochi-egg"
+            },
+            "originY": 0.86
+        }
+    ],
+    "plainObjects": [],
+    "meta": {
+        "app": "Phaser Editor - Scene Editor",
+        "url": "https://phaser.io/editor",
+        "contentType": "phasereditor2d.core.scene.SceneContentType",
+        "version": 5
+    }
+}

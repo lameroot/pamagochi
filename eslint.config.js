@@ -16,6 +16,8 @@ export default tseslint.config(
       'packages/database/prisma/migrations/**',
       'apps/web/public/**',
       'apps/game/dist/**',
+      // Phaser Editor generated output lives next to its .scene source.
+      'apps/game/*.js',
       'apps/parent/dist/**',
     ],
   },
