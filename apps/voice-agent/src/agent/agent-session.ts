@@ -384,11 +384,9 @@ export class AgentSession {
 
   private async handleAudio(chunk: Uint8Array): Promise<void> {
     if (this.closed || chunk.byteLength === 0) return;
-
-    if (this.bargeIn.getIsSpeaking()) {
-      await this.interruptSpeaking();
-    }
-
+    // LiveKit continuously supplies microphone frames, including room noise
+    // while the agent is speaking. Barge-in is handled only once Deepgram
+    // finalizes a new child utterance in handleFinalTranscript().
     this.metrics.recordSttPartial();
     this.sttSession?.writeAudio(chunk);
     this.metrics.addUsage({ sttSeconds: 1 });

@@ -118,6 +118,12 @@ describe('AgentSession', () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(states).toContain('speaking');
 
+    // Continuous microphone frames must not be treated as an interruption.
+    // Only a finalized new utterance is valid barge-in input.
+    transport.emitChildAudio(new Uint8Array([1, 2, 3, 4]));
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(states).not.toContain('interrupted');
+
     void session.handleFinalTranscript('перебей');
     await new Promise((resolve) => setTimeout(resolve, 100));
     expect(states).toContain('interrupted');
