@@ -1,0 +1,112 @@
+.page {
+  max-width: 420px;
+  margin: 2rem auto;
+}
+
+.page h1 {
+  margin-bottom: 0.5rem;
+}
+
+.page p {
+  color: #495057;
+  margin-bottom: 1.5rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.form input,
+.form select,
+.form textarea {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  font: inherit;
+}
+
+.card {
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: #fff;
+}
+
+.card h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.meta {
+  color: #6c757d;
+  font-size: 0.875rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.error {
+  color: #c92a2a;
+  margin-top: 0.5rem;
+}
+
+.link-row {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
+
+.link-row a {
+  color: #4263eb;
+}
+
+.list-empty {
+  padding: 2rem;
+  text-align: center;
+  color: #6c757d;
+  border: 1px dashed #ced4da;
+  border-radius: 8px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #e7f5ff;
+  color: #1864ab;
+}
+
+.turn {
+  padding: 0.75rem;
+  border-left: 3px solid #dee2e6;
+  margin-bottom: 0.5rem;
+  background: #f8f9fa;
+}
+
+.turn-child {
+  border-left-color: #4263eb;
+}
+
+.turn-agent {
+  border-left-color: #37b24d;
+}
+
+.turn-system {
+  border-left-color: #868e96;
+}

@@ -115,6 +115,12 @@ async function main() {
   }
   ok('Migrations applied');
 
+  // Must run before seeding: prisma/seed.ts imports from
+  // @pamagochi/agent-core and @pamagochi/safety-contracts, which are only
+  // resolvable once their `dist/` output exists (see each package's
+  // `exports` field).
+  await buildSharedPackages(process.env);
+
   step('Seeding the database');
   const seedCode = await runToCompletion(
     'pnpm',
@@ -126,8 +132,6 @@ async function main() {
     process.exit(seedCode);
   }
   ok('Database seeded');
-
-  await buildSharedPackages(process.env);
 
   step('Clearing any leftover processes on the API/web ports');
   await killProcessesOnPort(apiPort);
@@ -156,8 +160,10 @@ async function main() {
       },
     );
     if (playwrightCode !== 0) {
-      fail('Playwright smoke test failed');
-      process.exit(playwrightCode);
+      // Throw (rather than process.exit here) so the `finally` block below
+      // still runs and stops the API/web dev servers this script started;
+      // process.exit() would bypass `finally` and leak them on their ports.
+      throw new Error('Playwright smoke test failed');
     }
     ok('Playwright smoke test passed');
   } finally {

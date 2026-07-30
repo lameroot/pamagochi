@@ -9,6 +9,11 @@ export const childProfileSchema = z.object({
   displayName: z.string().min(1).max(40),
   avatarKey: childAvatarKeySchema,
   birthYear: z.number().int().min(2000).max(2100).nullable(),
+  birthDate: z.string().date().nullable(),
+  primaryLanguage: z.string().min(2).max(16),
+  readingLevel: z.string().max(64).nullable(),
+  mathLevel: z.string().max(64).nullable(),
+  deletedAt: z.string().datetime().nullable(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -18,6 +23,10 @@ export const createChildProfileRequestSchema = z.object({
   displayName: z.string().min(1).max(40),
   avatarKey: childAvatarKeySchema,
   birthYear: z.number().int().min(2000).max(2100).nullable().optional(),
+  birthDate: z.string().date().nullable().optional(),
+  primaryLanguage: z.string().min(2).max(16).default('ru'),
+  readingLevel: z.string().max(64).nullable().optional(),
+  mathLevel: z.string().max(64).nullable().optional(),
 });
 export type CreateChildProfileRequest = z.infer<typeof createChildProfileRequestSchema>;
 

@@ -15,6 +15,8 @@ export default tseslint.config(
       '**/.data/**',
       'packages/database/prisma/migrations/**',
       'apps/web/public/**',
+      'apps/game/dist/**',
+      'apps/parent/dist/**',
     ],
   },
   js.configs.recommended,

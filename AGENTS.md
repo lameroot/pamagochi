@@ -22,9 +22,15 @@ pnpm dev:local
 
 ## Структура
 
-- `apps/web` — React + Vite + Phaser (frontend).
+- `apps/web` — переходный React + Vite + Phaser UI (до полной миграции).
+- `apps/game` — Phaser детское приложение (голос + сцены).
+- `apps/parent` — React кабинет родителя.
 - `apps/api` — NestJS + Fastify (backend).
-- `packages/contracts` — общие Zod-схемы и типы DTO.
+- `apps/voice-agent` — LiveKit voice runtime (STT → LLM → TTS).
+- `packages/contracts` — общие Zod-схемы и типы DTO (включая voice protocol).
+- `packages/game-protocol` — детерминированный протокол сцен/state machine.
+- `packages/agent-core` — интерфейсы провайдеров и чистые agent helpers.
+- `packages/safety-contracts` — схемы safety policy.
 - `packages/game-core` — чистая игровая логика без React/Phaser/NestJS/Prisma зависимостей.
 - `packages/database` — Prisma schema, миграции, клиент, seed.
 - `packages/ui` — общие React-компоненты.

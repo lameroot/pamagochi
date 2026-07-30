@@ -1,6 +1,7 @@
 export * from './identity.js';
 export * from './errors.js';
 export * from './parent.js';
+export * from './parent-cabinet.js';
 export * from './child.js';
 export * from './skill.js';
 export * from './quest.js';
@@ -8,3 +9,4 @@ export * from './asset.js';
 export * from './scene-spec.js';
 export * from './meta.js';
 export * from './game-bridge.js';
+export * from './voice/index.js';

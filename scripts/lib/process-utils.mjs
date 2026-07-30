@@ -13,7 +13,7 @@ function wireSignalForwarding() {
   for (const signal of ['SIGINT', 'SIGTERM']) {
     process.on(signal, () => {
       for (const child of activeChildren) {
-        child.kill(signal);
+        killChild(child, signal);
       }
     });
   }
@@ -21,10 +21,31 @@ function wireSignalForwarding() {
 
 export function spawnTracked(command, args, options = {}) {
   wireSignalForwarding();
-  const child = spawn(command, args, { stdio: 'inherit', ...options });
+  // `detached: true` puts the child in its own process group (POSIX), so we
+  // can later signal the *whole* group (see killChild below). This matters
+  // for multi-hop dev commands like `pnpm run dev` -> `sh -c` -> a watcher
+  // script -> `tsc --watch` / `node --watch`, where a signal to just the
+  // immediate child is not reliably forwarded all the way down, and
+  // `node --watch` in particular can swallow SIGTERM for its currently
+  // running module without the wrapper process itself exiting.
+  const child = spawn(command, args, { stdio: 'inherit', detached: true, ...options });
   activeChildren.add(child);
   child.on('exit', () => activeChildren.delete(child));
   return child;
+}
+
+function killChild(child, signal) {
+  if (child.pid === undefined) return;
+  try {
+    // Negative pid signals the entire process group created by `detached: true`.
+    process.kill(-child.pid, signal);
+  } catch {
+    try {
+      child.kill(signal);
+    } catch {
+      // Process (group) may have already exited; ignore.
+    }
+  }
 }
 
 export function runToCompletion(command, args, options = {}) {
@@ -43,7 +64,7 @@ export function runToCompletion(command, args, options = {}) {
 
 export function killAllTracked(signal = 'SIGTERM') {
   for (const child of activeChildren) {
-    child.kill(signal);
+    killChild(child, signal);
   }
 }
 

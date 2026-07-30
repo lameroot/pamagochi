@@ -63,3 +63,20 @@ describe('parseEnv', () => {
     ).toThrow(/SUPABASE_JWT_ISSUER/);
   });
 });
+
+it('rejects partial LiveKit configuration', () => {
+  expect(() => parseEnv({ ...baseLocalEnv, LIVEKIT_URL: 'wss://example.livekit.cloud' })).toThrow(
+    /LIVEKIT_API_KEY/,
+  );
+});
+
+it('accepts complete optional LiveKit configuration', () => {
+  const result = parseEnv({
+    ...baseLocalEnv,
+    LIVEKIT_URL: 'wss://example.livekit.cloud',
+    LIVEKIT_API_KEY: 'key',
+    LIVEKIT_API_SECRET: 'secret',
+    VOICE_AGENT_SERVICE_TOKEN: 'c'.repeat(32),
+  });
+  expect(result.env.LIVEKIT_URL).toContain('wss://');
+});

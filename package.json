@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Pamagochi \u2014 educational game platform monorepo (local & cloud profiles)",
+  "description": "Pamagochi — educational game platform monorepo (local & cloud profiles)",
   "license": "UNLICENSED",
   "packageManager": "pnpm@10.15.0",
   "engines": {
@@ -33,7 +33,10 @@
     "check:no-secrets-in-examples": "node scripts/check-no-secrets-in-examples.mjs",
     "e2e:local": "node scripts/run-profile.mjs local e2e",
     "smoke:cloud": "node scripts/verify-cloud.mjs",
-    "check": "pnpm check:no-secrets-in-examples && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "check": "pnpm check:no-secrets-in-examples && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "dev:game": "pnpm --filter @pamagochi/game run dev",
+    "dev:parent": "pnpm --filter @pamagochi/parent run dev",
+    "dev:voice-agent": "pnpm --filter @pamagochi/voice-agent run dev"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

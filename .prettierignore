@@ -4,7 +4,10 @@ build
 coverage
 .turbo
 .data
+.beads
 pnpm-lock.yaml
 packages/database/prisma/migrations
 apps/web/dist
+apps/game/dist
+apps/parent/dist
 CHANGELOG.md

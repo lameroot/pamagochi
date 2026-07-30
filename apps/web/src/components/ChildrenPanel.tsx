@@ -60,7 +60,11 @@ export function ChildrenPanel({
         onSubmit={(event) => {
           event.preventDefault();
           if (!displayName.trim()) return;
-          createChild.mutate({ displayName: displayName.trim(), avatarKey });
+          createChild.mutate({
+            displayName: displayName.trim(),
+            avatarKey,
+            primaryLanguage: 'ru',
+          });
         }}
       >
         <input

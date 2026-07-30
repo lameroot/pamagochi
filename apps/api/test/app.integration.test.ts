@@ -9,6 +9,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../src/app.module.js';
 import { GlobalHttpExceptionFilter } from '../src/common/http-exception.filter.js';
 import { PrismaService } from '../src/database/prisma.service.js';
+import { seedActivePromptVersions } from './seed-fixtures.js';
 
 /**
  * Requires a real, reachable PostgreSQL instance (see infra/local/compose.yaml
@@ -25,10 +26,10 @@ describe('API integration', () => {
       logger: false,
     });
     app.useGlobalFilters(new GlobalHttpExceptionFilter());
+    prisma = app.get(PrismaService);
+    await seedActivePromptVersions(prisma);
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
-
-    prisma = app.get(PrismaService);
 
     const loginResponse = await app.getHttpAdapter().getInstance().inject({
       method: 'POST',
@@ -169,5 +170,225 @@ describe('API integration', () => {
       where: { id: uploadBody.assetId },
     });
     expect(completedAsset?.status).toBe('completed');
+  });
+
+  it('creates a limited game session and bootstraps LiveKit without parent JWT', async () => {
+    const createChild = await app
+      .getHttpAdapter()
+      .getInstance()
+      .inject({
+        method: 'POST',
+        url: '/api/children',
+        headers: { ...authHeader(), 'content-type': 'application/json' },
+        payload: { displayName: 'Voice Kid', avatarKey: 'fox', birthYear: 2019 },
+      });
+    expect([200, 201]).toContain(createChild.statusCode);
+    const child = JSON.parse(createChild.payload) as { id: string };
+
+    const createSession = await app
+      .getHttpAdapter()
+      .getInstance()
+      .inject({
+        method: 'POST',
+        url: `/api/children/${child.id}/game-sessions`,
+        headers: { ...authHeader(), 'content-type': 'application/json' },
+        payload: { deviceId: 'test-device' },
+      });
+    expect([200, 201]).toContain(createSession.statusCode);
+    const session = JSON.parse(createSession.payload) as {
+      gameSessionId: string;
+      limitedGameToken: string;
+    };
+    expect(session.limitedGameToken).toBeTruthy();
+
+    const bootstrap = await app
+      .getHttpAdapter()
+      .getInstance()
+      .inject({
+        method: 'POST',
+        url: '/api/game/bootstrap',
+        headers: { 'content-type': 'application/json' },
+        payload: { limitedGameToken: session.limitedGameToken },
+      });
+    expect(bootstrap.statusCode).toBe(200);
+    const boot = JSON.parse(bootstrap.payload) as {
+      child: { ageBand: string; displayName: string };
+      livekit: { url: string; token: string; roomName: string };
+    };
+    expect(boot.child.ageBand).toBe('6-8');
+    expect(boot.livekit.token.split('.').length).toBe(3);
+    expect(boot.livekit.roomName).toContain(session.gameSessionId);
+
+    const revoked = await app
+      .getHttpAdapter()
+      .getInstance()
+      .inject({
+        method: 'POST',
+        url: `/api/children/game-sessions/${session.gameSessionId}/revoke`,
+        headers: authHeader(),
+      });
+    expect([200, 201]).toContain(revoked.statusCode);
+
+    const bootstrapRevoked = await app
+      .getHttpAdapter()
+      .getInstance()
+      .inject({
+        method: 'POST',
+        url: '/api/game/bootstrap',
+        headers: { 'content-type': 'application/json' },
+        payload: { limitedGameToken: session.limitedGameToken },
+      });
+    expect(bootstrapRevoked.statusCode).toBe(403);
+  });
+
+  it('serves voice-agent session context only with service token', async () => {
+    const createChild = await app
+      .getHttpAdapter()
+      .getInstance()
+      .inject({
+        method: 'POST',
+        url: '/api/children',
+        headers: { ...authHeader(), 'content-type': 'application/json' },
+        payload: { displayName: 'Agent Kid', avatarKey: 'panda', birthYear: 2018 },
+      });
+    const child = JSON.parse(createChild.payload) as { id: string };
+    const createSession = await app
+      .getHttpAdapter()
+      .getInstance()
+      .inject({
+        method: 'POST',
+        url: `/api/children/${child.id}/game-sessions`,
+        headers: { ...authHeader(), 'content-type': 'application/json' },
+        payload: {},
+      });
+    const session = JSON.parse(createSession.payload) as { gameSessionId: string };
+
+    const denied = await app
+      .getHttpAdapter()
+      .getInstance()
+      .inject({
+        method: 'GET',
+        url: `/internal/agent/sessions/${session.gameSessionId}/context`,
+      });
+    expect(denied.statusCode).toBe(401);
+
+    const allowed = await app
+      .getHttpAdapter()
+      .getInstance()
+      .inject({
+        method: 'GET',
+        url: `/internal/agent/sessions/${session.gameSessionId}/context`,
+        headers: {
+          authorization: `Bearer ${process.env.VOICE_AGENT_SERVICE_TOKEN}`,
+        },
+      });
+    expect(allowed.statusCode).toBe(200);
+    const body = JSON.parse(allowed.payload) as {
+      childId: string;
+      livekitRoomName: string;
+      conversationSessionId: string;
+    };
+    expect(body.childId).toBe(child.id);
+    expect(body.livekitRoomName).toContain(session.gameSessionId);
+    expect(body.conversationSessionId).toBeTruthy();
+  });
+
+  it('appends conversation turns idempotently via internal API', async () => {
+    const createChild = await app
+      .getHttpAdapter()
+      .getInstance()
+      .inject({
+        method: 'POST',
+        url: '/api/children',
+        headers: { ...authHeader(), 'content-type': 'application/json' },
+        payload: { displayName: 'Turn Kid', avatarKey: 'owl', birthYear: 2017 },
+      });
+    const child = JSON.parse(createChild.payload) as { id: string };
+    const createSession = await app
+      .getHttpAdapter()
+      .getInstance()
+      .inject({
+        method: 'POST',
+        url: `/api/children/${child.id}/game-sessions`,
+        headers: { ...authHeader(), 'content-type': 'application/json' },
+        payload: {},
+      });
+    const session = JSON.parse(createSession.payload) as { gameSessionId: string };
+
+    const ctx = await app
+      .getHttpAdapter()
+      .getInstance()
+      .inject({
+        method: 'GET',
+        url: `/internal/agent/sessions/${session.gameSessionId}/context`,
+        headers: { authorization: `Bearer ${process.env.VOICE_AGENT_SERVICE_TOKEN}` },
+      });
+    const { conversationSessionId } = JSON.parse(ctx.payload) as { conversationSessionId: string };
+
+    const turnBody = {
+      idempotencyKey: 'turn-key-1',
+      sequenceNo: 0,
+      speaker: 'child',
+      text: 'привет',
+      startedAt: new Date().toISOString(),
+      wasInterrupted: false,
+      safetyFlags: [],
+      metadata: {},
+    };
+
+    const first = await app
+      .getHttpAdapter()
+      .getInstance()
+      .inject({
+        method: 'POST',
+        url: `/internal/agent/sessions/${conversationSessionId}/turns`,
+        headers: {
+          authorization: `Bearer ${process.env.VOICE_AGENT_SERVICE_TOKEN}`,
+          'content-type': 'application/json',
+        },
+        payload: turnBody,
+      });
+    expect(first.statusCode).toBe(201);
+    const firstBody = JSON.parse(first.payload) as { created: boolean };
+    expect(firstBody.created).toBe(true);
+
+    const second = await app
+      .getHttpAdapter()
+      .getInstance()
+      .inject({
+        method: 'POST',
+        url: `/internal/agent/sessions/${conversationSessionId}/turns`,
+        headers: {
+          authorization: `Bearer ${process.env.VOICE_AGENT_SERVICE_TOKEN}`,
+          'content-type': 'application/json',
+        },
+        payload: turnBody,
+      });
+    expect(second.statusCode).toBe(200);
+    const secondBody = JSON.parse(second.payload) as { created: boolean };
+    expect(secondBody.created).toBe(false);
+
+    const tool = await app
+      .getHttpAdapter()
+      .getInstance()
+      .inject({
+        method: 'POST',
+        url: `/internal/agent/sessions/${conversationSessionId}/tools`,
+        headers: {
+          authorization: `Bearer ${process.env.VOICE_AGENT_SERVICE_TOKEN}`,
+          'content-type': 'application/json',
+        },
+        payload: {
+          sceneKey: 'talking-light',
+          request: {
+            name: 'character_emote',
+            callId: 'c1',
+            arguments: { emotion: 'happy' },
+          },
+        },
+      });
+    expect(tool.statusCode).toBe(201);
+    const toolBody = JSON.parse(tool.payload) as { validation: string };
+    expect(toolBody.validation).toBe('accepted');
   });
 });
