@@ -2,6 +2,37 @@ import type { VoiceAgentEnv } from '../../config/env.schema.js';
 import { egressFetch } from '../../safety/egress-fetch.js';
 import type { StreamingTtsProvider, StreamingTtsSession } from '../types.js';
 
+async function describeFailure(response: Response): Promise<string> {
+  let detail = '';
+
+  try {
+    const payload: unknown = await response.json();
+    if (typeof payload === 'object' && payload !== null) {
+      const error = payload as {
+        detail?: { status?: unknown; message?: unknown } | unknown;
+        message?: unknown;
+      };
+      if (typeof error.detail === 'object' && error.detail !== null) {
+        const providerDetail = error.detail as { status?: unknown; message?: unknown };
+        detail = [providerDetail.status, providerDetail.message]
+          .filter((value): value is string => typeof value === 'string')
+          .join(': ');
+      } else if (typeof error.detail === 'string') {
+        detail = error.detail;
+      } else if (typeof error.message === 'string') {
+        detail = error.message;
+      }
+    }
+  } catch {
+    // Keep the status-only error when the provider did not return JSON.
+  }
+
+  const safeDetail = detail.replace(/\s+/g, ' ').trim().slice(0, 200);
+  return safeDetail
+    ? `ElevenLabs request failed with status ${response.status}: ${safeDetail}`
+    : `ElevenLabs request failed with status ${response.status}`;
+}
+
 /**
  * ElevenLabs streaming TTS adapter.
  * Secrets stay on the server; browser never calls ElevenLabs.
@@ -72,7 +103,7 @@ export class ElevenLabsTtsProvider implements StreamingTtsProvider {
         );
 
         if (!response.ok) {
-          throw new Error(`ElevenLabs request failed with status ${response.status}`);
+          throw new Error(await describeFailure(response));
         }
 
         const reader = response.body?.getReader();
