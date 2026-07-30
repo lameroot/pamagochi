@@ -64,7 +64,8 @@ export class AgentConversationService {
       !session ||
       session.child.deletedAt ||
       session.status === 'completed' ||
-      session.status === 'cancelled'
+      session.status === 'cancelled' ||
+      session.status === 'finalizing'
     ) {
       throw new NotFoundException('Conversation session is not available');
     }
@@ -125,8 +126,15 @@ export class AgentConversationService {
       throw new NotFoundException('Conversation session is not available');
     }
 
-    const terminalStatuses: ConversationSessionStatus[] = ['completed', 'failed', 'cancelled'];
-    if (terminalStatuses.includes(session.status)) {
+    const nonFinalizableStatuses: ConversationSessionStatus[] = [
+      'completed',
+      'failed',
+      'cancelled',
+      'finalizing',
+    ];
+    if (nonFinalizableStatuses.includes(session.status)) {
+      // Already terminal, or a finalize job is already in flight — do not
+      // redispatch SESSION_FINALIZE_JOB for a retry/overlapping shutdown call.
       return { id: session.id, status: session.status };
     }
 

@@ -70,8 +70,12 @@ export class IntroProgressService {
     });
     const existing = toDto(existingRow);
 
-    // Idempotent replay: same key + same target returns current progress without side effects.
+    // Idempotent replay: same key must also match the state it previously produced.
+    // Reusing a key with a different target state is a client bug, not a safe no-op.
     if (existingRow.lastIdempotencyKey && existingRow.lastIdempotencyKey === input.idempotencyKey) {
+      if (existing.state !== input.targetState) {
+        throw new BadRequestException('Idempotency key already used for a different target state');
+      }
       return { progress: existing, changed: false };
     }
 

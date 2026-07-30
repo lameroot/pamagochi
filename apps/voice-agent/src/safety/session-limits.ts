@@ -56,14 +56,14 @@ export interface SessionLimitsContext {
 export function sessionLimitConfigFromEnv(env: VoiceAgentEnv): SessionLimitConfig {
   return {
     maxDurationSeconds: Number(process.env.VOICE_SESSION_MAX_DURATION_SECONDS ?? 3600),
-    idleTimeoutSeconds: Number(process.env.VOICE_SESSION_IDLE_TIMEOUT_SECONDS ?? 300),
+    idleTimeoutSeconds: Number(process.env.VOICE_SESSION_IDLE_TIMEOUT_SECONDS ?? 120),
     maxTurnsPerMinute: env.VOICE_MAX_TURNS_PER_MINUTE,
     maxOutputTokensPerTurn: env.VOICE_MAX_OUTPUT_TOKENS_PER_TURN,
     maxTtsCharactersPerSession: env.VOICE_MAX_TTS_CHARACTERS_PER_SESSION,
     maxSttSecondsPerSession: env.VOICE_MAX_STT_SECONDS_PER_SESSION,
     maxConcurrentSessionsPerChild: Number(process.env.VOICE_MAX_CONCURRENT_SESSIONS_PER_CHILD ?? 1),
-    dailyBudgetUsdPerChild: Number(process.env.VOICE_DAILY_BUDGET_USD_PER_CHILD ?? 5),
-    globalDailyBudgetUsd: Number(process.env.VOICE_GLOBAL_DAILY_BUDGET_USD ?? 500),
+    dailyBudgetUsdPerChild: Number(process.env.VOICE_DAILY_BUDGET_USD_PER_CHILD ?? 1),
+    globalDailyBudgetUsd: Number(process.env.VOICE_GLOBAL_DAILY_BUDGET_USD ?? 25),
   };
 }
 
@@ -83,10 +83,10 @@ export function sessionLimitConfigFromApiEnv(env: {
 > {
   return {
     maxDurationSeconds: env.VOICE_SESSION_MAX_DURATION_SECONDS ?? 3600,
-    idleTimeoutSeconds: env.VOICE_SESSION_IDLE_TIMEOUT_SECONDS ?? 300,
+    idleTimeoutSeconds: env.VOICE_SESSION_IDLE_TIMEOUT_SECONDS ?? 120,
     maxConcurrentSessionsPerChild: env.VOICE_MAX_CONCURRENT_SESSIONS_PER_CHILD ?? 1,
-    dailyBudgetUsdPerChild: env.VOICE_DAILY_BUDGET_USD_PER_CHILD ?? 5,
-    globalDailyBudgetUsd: env.VOICE_GLOBAL_DAILY_BUDGET_USD ?? 500,
+    dailyBudgetUsdPerChild: env.VOICE_DAILY_BUDGET_USD_PER_CHILD ?? 1,
+    globalDailyBudgetUsd: env.VOICE_GLOBAL_DAILY_BUDGET_USD ?? 25,
   };
 }
 

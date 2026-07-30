@@ -22,6 +22,7 @@ import {
   type SafetyEventDto,
   type VoiceSessionContext,
 } from '@pamagochi/contracts';
+import { Prisma } from '@pamagochi/database';
 import { z } from 'zod';
 import { InternalApiRateLimitGuard } from '../common/rate-limit.guard.js';
 import { PrismaService } from '../database/prisma.service.js';
@@ -83,19 +84,7 @@ export class InternalAgentController {
 
     let conversation = session.conversationSessions[0];
     if (!conversation) {
-      conversation = await this.prisma.client.conversationSession.create({
-        data: {
-          childId: session.childId,
-          gameSessionId: session.id,
-          livekitRoomId: `game-${session.id}`,
-          status: 'active',
-          soulVersion: process.env.PAMAGOCHI_SOUL_VERSION ?? '0.1.0',
-          safetyPolicyVersion: process.env.PAMAGOCHI_SAFETY_POLICY_VERSION ?? '0.1.0',
-          llmProvider: process.env.VOICE_LLM_PROVIDER ?? 'deepseek',
-          sttProvider: process.env.VOICE_STT_PROVIDER ?? 'deepgram',
-          ttsProvider: process.env.VOICE_TTS_PROVIDER ?? 'elevenlabs',
-        },
-      });
+      conversation = await this.createActiveConversationOrGetExisting(session.id, session.childId);
     }
 
     const memoryContext = await this.memory.buildMemoryContext(session.childId);
@@ -127,6 +116,39 @@ export class InternalAgentController {
       worldState,
       goal,
     };
+  }
+
+  /**
+   * Creates the single active ConversationSession for a game session.
+   * A partial unique index on (gameSessionId) WHERE status = 'active'
+   * guards against concurrent requests racing to create one each; on
+   * conflict we re-fetch the row the other request just inserted.
+   */
+  private async createActiveConversationOrGetExisting(gameSessionId: string, childId: string) {
+    try {
+      return await this.prisma.client.conversationSession.create({
+        data: {
+          childId,
+          gameSessionId,
+          livekitRoomId: `game-${gameSessionId}`,
+          status: 'active',
+          soulVersion: process.env.PAMAGOCHI_SOUL_VERSION ?? '0.1.0',
+          safetyPolicyVersion: process.env.PAMAGOCHI_SAFETY_POLICY_VERSION ?? '0.1.0',
+          llmProvider: process.env.VOICE_LLM_PROVIDER ?? 'deepseek',
+          sttProvider: process.env.VOICE_STT_PROVIDER ?? 'deepgram',
+          ttsProvider: process.env.VOICE_TTS_PROVIDER ?? 'elevenlabs',
+        },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        const existing = await this.prisma.client.conversationSession.findFirst({
+          where: { gameSessionId, status: 'active' },
+          orderBy: { startedAt: 'desc' },
+        });
+        if (existing) return existing;
+      }
+      throw error;
+    }
   }
 
   @Post('sessions/:conversationSessionId/turns')

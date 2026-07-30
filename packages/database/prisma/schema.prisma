@@ -282,6 +282,10 @@ model ConversationSession {
   @@index([childId, startedAt])
   @@index([gameSessionId])
   @@map("conversation_sessions")
+  // A partial unique index enforcing at most one status = 'active' row per
+  // gameSessionId is also applied via raw SQL migration (Prisma's schema DSL
+  // has no filtered/partial unique index syntax): see migration
+  // 20260730140000_conversation_session_one_active.
 }
 
 model ConversationTurn {

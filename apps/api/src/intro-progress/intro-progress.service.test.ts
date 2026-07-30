@@ -115,4 +115,24 @@ describe('IntroProgressService', () => {
     expect(result.progress.state).toBe('SHIP_POWERED');
     expect(prisma.client.introProgress.update).not.toHaveBeenCalled();
   });
+
+  it('rejects reusing an idempotency key for a different target state', async () => {
+    const prisma = mockPrisma({
+      childId: 'child-1',
+      state: 'SHIP_POWERED',
+      sharedEventsJson: ['ship_powered'],
+      completedAt: null,
+      updatedAt: new Date('2026-07-30T00:00:00.000Z'),
+      lastIdempotencyKey: 'k1',
+    });
+    service = new IntroProgressService(prisma);
+    await expect(
+      service.transition({
+        limitedGameToken: 'token',
+        targetState: 'VOICE_CONNECTION_READY',
+        idempotencyKey: 'k1',
+      }),
+    ).rejects.toThrow(/different target state/);
+    expect(prisma.client.introProgress.update).not.toHaveBeenCalled();
+  });
 });

@@ -94,4 +94,55 @@ describe('AgentConversationService', () => {
       conversationSessionId: 'cs1',
     });
   });
+
+  it('does not redispatch finalize job for a session already finalizing', async () => {
+    const prisma = {
+      client: {
+        conversationSession: {
+          findUnique: async () => ({
+            id: 'cs1',
+            status: 'finalizing',
+            child: { deletedAt: null },
+          }),
+          update: async () => {
+            throw new Error('should not update');
+          },
+        },
+      },
+    };
+    const jobs = { dispatch: vi.fn() };
+    const service = new AgentConversationService(prisma as never, jobs as never);
+    const result = await service.finalize('cs1', { status: 'completed' });
+    expect(result.status).toBe('finalizing');
+    expect(jobs.dispatch).not.toHaveBeenCalled();
+  });
+
+  it('rejects appending turns to a session that is finalizing', async () => {
+    const prisma = {
+      client: {
+        conversationSession: {
+          findUnique: async () => ({ id: 'cs1', status: 'finalizing', child: { deletedAt: null } }),
+        },
+        conversationTurn: {
+          findFirst: async () => {
+            throw new Error('should not be reached');
+          },
+        },
+      },
+    };
+    const jobs = { dispatch: vi.fn() };
+    const service = new AgentConversationService(prisma as never, jobs as never);
+    await expect(
+      service.appendTurn('cs1', {
+        idempotencyKey: 'key-1',
+        sequenceNo: 0,
+        speaker: 'child',
+        text: 'hi',
+        startedAt: '2026-01-01T00:00:00.000Z',
+        wasInterrupted: false,
+        safetyFlags: [],
+        metadata: {},
+      }),
+    ).rejects.toThrow();
+  });
 });

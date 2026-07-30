@@ -124,7 +124,7 @@ export class AppConfigService {
   }
 
   get voiceSessionIdleTimeoutSeconds(): number {
-    return this.env.VOICE_SESSION_IDLE_TIMEOUT_SECONDS ?? 300;
+    return this.env.VOICE_SESSION_IDLE_TIMEOUT_SECONDS ?? 120;
   }
 
   get voiceMaxConcurrentSessionsPerChild(): number {
@@ -132,11 +132,11 @@ export class AppConfigService {
   }
 
   get voiceDailyBudgetUsdPerChild(): number {
-    return this.env.VOICE_DAILY_BUDGET_USD_PER_CHILD ?? 5;
+    return this.env.VOICE_DAILY_BUDGET_USD_PER_CHILD ?? 1;
   }
 
   get voiceGlobalDailyBudgetUsd(): number {
-    return this.env.VOICE_GLOBAL_DAILY_BUDGET_USD ?? 500;
+    return this.env.VOICE_GLOBAL_DAILY_BUDGET_USD ?? 25;
   }
 
   get audioRecordingEnabled(): boolean {

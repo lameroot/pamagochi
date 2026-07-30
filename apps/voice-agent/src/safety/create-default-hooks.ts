@@ -30,8 +30,8 @@ export function createDefaultSafetyRuntime(env: VoiceAgentEnv): DefaultSafetyRun
   const sessionLimits = new SessionLimits(sessionLimitConfigFromEnv(env));
   const sessionUsage = createInitialUsage();
   const budgetTracker = new BudgetTracker({
-    dailyUsdPerChild: Number(process.env.VOICE_DAILY_BUDGET_USD_PER_CHILD ?? 5),
-    globalDailyUsd: Number(process.env.VOICE_GLOBAL_DAILY_BUDGET_USD ?? 500),
+    dailyUsdPerChild: Number(process.env.VOICE_DAILY_BUDGET_USD_PER_CHILD ?? 1),
+    globalDailyUsd: Number(process.env.VOICE_GLOBAL_DAILY_BUDGET_USD ?? 25),
   });
 
   const hooks: AgentSafetyHooks = {
