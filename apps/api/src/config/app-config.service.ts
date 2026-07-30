@@ -123,7 +123,19 @@ export class AppConfigService {
     return this.env.VOICE_SESSION_MAX_DURATION_SECONDS ?? 1800;
   }
 
+  get voiceSessionIdleTimeoutSeconds(): number {
+    return this.env.VOICE_SESSION_IDLE_TIMEOUT_SECONDS ?? 300;
+  }
+
   get voiceMaxConcurrentSessionsPerChild(): number {
     return this.env.VOICE_MAX_CONCURRENT_SESSIONS_PER_CHILD ?? 1;
+  }
+
+  get voiceDailyBudgetUsdPerChild(): number {
+    return this.env.VOICE_DAILY_BUDGET_USD_PER_CHILD ?? 5;
+  }
+
+  get voiceGlobalDailyBudgetUsd(): number {
+    return this.env.VOICE_GLOBAL_DAILY_BUDGET_USD ?? 500;
   }
 }

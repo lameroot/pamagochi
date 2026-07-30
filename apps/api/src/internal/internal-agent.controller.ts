@@ -1,13 +1,49 @@
-import { Controller, Get, NotFoundException, Param, UseGuards } from '@nestjs/common';
-import type { VoiceSessionContext } from '@pamagochi/contracts';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpStatus,
+  NotFoundException,
+  Param,
+  Post,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import type { FastifyReply } from 'fastify';
+import {
+  agentToolRequestSchema,
+  appendConversationTurnRequestSchema,
+  finalizeConversationSessionRequestSchema,
+  type ActivePromptVersionsResponse,
+  type AgentToolResult,
+  type AppendConversationTurnResponse,
+  type VoiceSessionContext,
+} from '@pamagochi/contracts';
+import { z } from 'zod';
 import { PrismaService } from '../database/prisma.service.js';
 import { ageBandFromBirth } from '../game-sessions/age-band.js';
+import { AgentConversationService } from './agent-conversation.service.js';
+import { PromptVersionService } from './prompt-version.service.js';
 import { ServiceAuthGuard } from './service-auth.guard.js';
+import { ToolValidationService } from './tool-validation.service.js';
+
+const invokeToolBodySchema = z.object({
+  sceneKey: z.string().min(1).max(64),
+  sceneState: z.string().min(1).max(64).optional(),
+  request: agentToolRequestSchema,
+  turnId: z.string().min(1).optional(),
+  callStartedAtMs: z.number().int().positive().optional(),
+});
 
 @Controller('internal/agent')
 @UseGuards(ServiceAuthGuard)
 export class InternalAgentController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly conversation: AgentConversationService,
+    private readonly tools: ToolValidationService,
+    private readonly promptVersions: PromptVersionService,
+  ) {}
 
   @Get('sessions/:gameSessionId/context')
   async getSessionContext(
@@ -64,5 +100,47 @@ export class InternalAgentController {
       safetyPolicyVersion: conversation.safetyPolicyVersion ?? '0.1.0',
       livekitRoomName: conversation.livekitRoomId,
     };
+  }
+
+  @Post('sessions/:conversationSessionId/turns')
+  async appendTurn(
+    @Param('conversationSessionId') conversationSessionId: string,
+    @Body() body: unknown,
+    @Res({ passthrough: true }) res: FastifyReply,
+  ): Promise<AppendConversationTurnResponse> {
+    const parsed = appendConversationTurnRequestSchema.parse(body);
+    const result = await this.conversation.appendTurn(conversationSessionId, parsed);
+    void res.status(result.created ? HttpStatus.CREATED : HttpStatus.OK);
+    return result;
+  }
+
+  @Post('sessions/:conversationSessionId/finalize')
+  async finalizeSession(
+    @Param('conversationSessionId') conversationSessionId: string,
+    @Body() body: unknown,
+  ): Promise<{ id: string; status: string }> {
+    const parsed = finalizeConversationSessionRequestSchema.parse(body);
+    return this.conversation.finalize(conversationSessionId, parsed);
+  }
+
+  @Post('sessions/:conversationSessionId/tools')
+  async invokeTool(
+    @Param('conversationSessionId') conversationSessionId: string,
+    @Body() body: unknown,
+  ): Promise<AgentToolResult> {
+    const parsed = invokeToolBodySchema.parse(body);
+    return this.tools.validateAndAudit({
+      conversationSessionId,
+      sceneKey: parsed.sceneKey,
+      sceneState: parsed.sceneState,
+      request: parsed.request,
+      turnId: parsed.turnId,
+      callStartedAtMs: parsed.callStartedAtMs,
+    });
+  }
+
+  @Get('prompt-versions/active')
+  getActivePromptVersions(): ActivePromptVersionsResponse {
+    return this.promptVersions.getActiveSnapshot();
   }
 }

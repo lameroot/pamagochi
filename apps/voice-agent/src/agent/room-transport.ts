@@ -1,4 +1,6 @@
 import { AccessToken } from 'livekit-server-sdk';
+import type { AgentState, AgentToolResult } from '@pamagochi/contracts';
+import { VOICE_PROTOCOL_VERSION } from '@pamagochi/contracts';
 import type { VoiceAgentEnv } from '../config/env.schema.js';
 
 export interface RoomTransport {
@@ -7,11 +9,18 @@ export interface RoomTransport {
   disconnect(): Promise<void>;
   publishAudio(chunk: Uint8Array): Promise<void>;
   onAudio(handler: (chunk: Uint8Array) => void): void;
+  publishAgentState(state: AgentState): Promise<void>;
+  publishToolResult(result: AgentToolResult): Promise<void>;
+}
+
+function encodeRuntimeEvent(payload: unknown): Uint8Array {
+  return new TextEncoder().encode(JSON.stringify(payload));
 }
 
 /** In-memory transport for unit tests and local dry-runs without LiveKit network. */
 export class MockRoomTransport implements RoomTransport {
   private audioHandler?: (chunk: Uint8Array) => void;
+  private runtimeHandler?: (payload: unknown) => void;
   connected = false;
 
   constructor(readonly roomName: string) {}
@@ -31,6 +40,30 @@ export class MockRoomTransport implements RoomTransport {
 
   onAudio(handler: (chunk: Uint8Array) => void): void {
     this.audioHandler = handler;
+  }
+
+  async publishAgentState(state: AgentState): Promise<void> {
+    await this.publishRuntimeEvent({
+      type: 'agent-state',
+      state,
+      at: new Date().toISOString(),
+    });
+  }
+
+  async publishToolResult(result: AgentToolResult): Promise<void> {
+    await this.publishRuntimeEvent({
+      type: 'tool-result',
+      protocolVersion: VOICE_PROTOCOL_VERSION,
+      result,
+    });
+  }
+
+  async publishRuntimeEvent(payload: unknown): Promise<void> {
+    this.runtimeHandler?.(payload);
+  }
+
+  onRuntimeEvent(handler: (payload: unknown) => void): void {
+    this.runtimeHandler = handler;
   }
 
   /** Test helper: simulate child mic audio. */
@@ -76,8 +109,6 @@ export class LiveKitRoomTransport implements RoomTransport {
     if (!jwt.includes('.')) {
       throw new Error('Failed to mint LiveKit agent token');
     }
-    // Media bridge is completed alongside E1.4 Phaser client; token proves
-    // server-side credentials work without embedding secrets in the game app.
     this.connected = true;
   }
 
@@ -92,5 +123,15 @@ export class LiveKitRoomTransport implements RoomTransport {
 
   onAudio(_handler: (chunk: Uint8Array) => void): void {
     /* wired in rtc-node integration */
+  }
+
+  async publishAgentState(state: AgentState): Promise<void> {
+    void state;
+    /* wired in rtc-node data channel integration */
+  }
+
+  async publishToolResult(result: AgentToolResult): Promise<void> {
+    void result;
+    /* wired in rtc-node data channel integration */
   }
 }

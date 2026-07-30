@@ -1,6 +1,8 @@
 import { parseVoiceAgentEnv } from './config/env.schema.js';
 import { AgentSession } from './agent/agent-session.js';
 import { LiveKitRoomTransport, MockRoomTransport } from './agent/room-transport.js';
+import { PromptVersionLoader } from './prompt/prompt-version-loader.js';
+import { SoulLoader } from './soul/soul-loader.js';
 
 /**
  * Voice-agent entrypoint.
@@ -12,6 +14,22 @@ import { LiveKitRoomTransport, MockRoomTransport } from './agent/room-transport.
 async function main(): Promise<void> {
   const env = parseVoiceAgentEnv(process.env);
   const gameSessionId = process.env.VOICE_GAME_SESSION_ID;
+
+  try {
+    const loader = new PromptVersionLoader();
+    const soulFile = new SoulLoader().load({ expectedVersion: env.PAMAGOCHI_SOUL_VERSION });
+    await loader.loadActive({
+      apiBaseUrl: env.VOICE_AGENT_INTERNAL_API_URL,
+      serviceToken: env.VOICE_AGENT_SERVICE_TOKEN,
+      expectedSoulVersion: env.PAMAGOCHI_SOUL_VERSION,
+      expectedSafetyVersion: env.PAMAGOCHI_SAFETY_POLICY_VERSION,
+    });
+    void soulFile;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'prompt_version_load_failed';
+    console.error(JSON.stringify({ event: 'voice_agent_prompt_versions_invalid', message }));
+    process.exit(1);
+  }
 
   console.info(
     JSON.stringify({

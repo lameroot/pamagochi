@@ -56,3 +56,17 @@ export const conversationSessionSummarySchema = z.object({
   turnCount: z.number().int().nonnegative().optional(),
 });
 export type ConversationSessionSummaryDto = z.infer<typeof conversationSessionSummarySchema>;
+
+export const finalizeConversationSessionRequestSchema = z.object({
+  status: z.enum(['completed', 'failed', 'cancelled']).default('completed'),
+  sessionSummary: z.string().max(4000).optional(),
+});
+export type FinalizeConversationSessionRequest = z.infer<
+  typeof finalizeConversationSessionRequestSchema
+>;
+
+export const appendConversationTurnResponseSchema = z.object({
+  turn: conversationTurnSchema,
+  created: z.boolean(),
+});
+export type AppendConversationTurnResponse = z.infer<typeof appendConversationTurnResponseSchema>;

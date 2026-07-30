@@ -6,18 +6,25 @@ export class MockTtsProvider implements StreamingTtsProvider {
 
   startSession(): StreamingTtsSession {
     let handler: ((chunk: Uint8Array) => void) | undefined;
+    let accumulated = '';
+    let interrupted = false;
+    let firstAudioSent = false;
+
     return {
-      writeText() {
-        /* accumulate in real adapters */
+      writeText(text: string) {
+        accumulated += text;
       },
       async end() {
-        handler?.(new Uint8Array([1, 2, 3, 4]));
+        if (!interrupted && !firstAudioSent) {
+          handler?.(new Uint8Array([1, 2, 3, 4]));
+          firstAudioSent = true;
+        }
       },
       onAudio(next) {
         handler = next;
       },
       async interrupt() {
-        /* stop playback path */
+        interrupted = true;
       },
     };
   }

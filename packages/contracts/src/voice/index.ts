@@ -5,3 +5,4 @@ export * from './conversation.js';
 export * from './memory.js';
 export * from './safety.js';
 export * from './protocol.js';
+export * from './prompt-versions.js';

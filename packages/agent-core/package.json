@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@pamagochi/contracts": "workspace:*",
+    "@pamagochi/game-protocol": "workspace:*",
     "zod": "4.4.3"
   },
   "devDependencies": {
