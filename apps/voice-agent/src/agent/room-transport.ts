@@ -122,6 +122,7 @@ export class LiveKitRoomTransport implements RoomTransport {
   private audioSource?: AudioSource;
   private audioTrack?: LocalAudioTrack;
   private pendingTtsByte?: number;
+  private receivedAudioFrames = 0;
 
   constructor(
     private readonly env: VoiceAgentEnv,
@@ -140,6 +141,7 @@ export class LiveKitRoomTransport implements RoomTransport {
       // The browser game joins with a child-* identity. Ignore any other
       // participants so an agent never transcribes its own published speech.
       if (track.kind !== TrackKind.KIND_AUDIO || !participant.identity.startsWith('child-')) return;
+      console.info(JSON.stringify({ event: 'voice_agent_child_audio_subscribed' }));
       void this.consumeChildAudio(track);
     });
 
@@ -159,6 +161,9 @@ export class LiveKitRoomTransport implements RoomTransport {
       this.audioTrack = audioTrack;
       this.agentToken = jwt;
       this.connected = true;
+      console.info(
+        JSON.stringify({ event: 'voice_agent_livekit_connected', roomName: this.roomName }),
+      );
     } catch (error) {
       await room.disconnect().catch(() => undefined);
       throw error;
@@ -231,6 +236,10 @@ export class LiveKitRoomTransport implements RoomTransport {
           frame.data.byteOffset,
           frame.data.byteLength,
         );
+        this.receivedAudioFrames += 1;
+        if (this.receivedAudioFrames === 1) {
+          console.info(JSON.stringify({ event: 'voice_agent_child_audio_received' }));
+        }
         this.audioHandler?.(Uint8Array.from(bytes));
       }
     } catch {

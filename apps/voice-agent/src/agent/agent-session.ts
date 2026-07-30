@@ -116,6 +116,9 @@ export class AgentSession {
         .catch((error: unknown) => {
           const message = error instanceof Error ? error.message : 'stt_transcript_failed';
           this.metrics.recordError(message);
+          if (message !== 'Session is not active') {
+            console.error(JSON.stringify({ event: 'voice_agent_turn_failed', message }));
+          }
         });
     });
     await this.setState('listening');
@@ -160,6 +163,9 @@ export class AgentSession {
       const agentReply = await this.speakReply(refusal);
       this.metrics.completeTurn();
       await this.setState('listening');
+      console.info(
+        JSON.stringify({ event: 'voice_agent_turn_completed', outcome: 'safe_refusal' }),
+      );
       return agentReply.heardText;
     }
 
@@ -176,6 +182,9 @@ export class AgentSession {
       const agentReply = await this.speakReply('Давай сделаем паузу и продолжим чуть позже.');
       this.metrics.completeTurn();
       await this.setState('listening');
+      console.info(
+        JSON.stringify({ event: 'voice_agent_turn_completed', outcome: 'circuit_open' }),
+      );
       return agentReply.heardText;
     }
 
@@ -214,6 +223,9 @@ export class AgentSession {
       const agentReply = await this.speakReply('Я рядом. Давай попробуем ещё раз.');
       this.metrics.completeTurn();
       await this.setState('listening');
+      console.info(
+        JSON.stringify({ event: 'voice_agent_turn_completed', outcome: 'llm_fallback' }),
+      );
       return agentReply.heardText;
     }
 
@@ -256,6 +268,13 @@ export class AgentSession {
     this.recordTurnUsage(text.length, safeReply.length, agentReply.heardText.length);
     this.metrics.completeTurn();
     await this.setState('listening');
+    console.info(
+      JSON.stringify({
+        event: 'voice_agent_turn_completed',
+        outcome: 'reply',
+        replyCharacters: agentReply.heardText.length,
+      }),
+    );
     return agentReply.heardText;
   }
 
@@ -405,6 +424,7 @@ export class AgentSession {
       const message = error instanceof Error ? error.message : 'tts_failed';
       this.safetyHooks?.sessionLimits?.getCircuitBreaker().recordFailure(message);
       this.metrics.recordError(message);
+      console.error(JSON.stringify({ event: 'voice_agent_tts_failed', message }));
     }
 
     this.activeTts = undefined;

@@ -61,7 +61,21 @@ export class DeepgramSttProvider implements StreamingSttProvider {
     const pendingAudio: Uint8Array[] = [];
 
     socket.on('open', () => {
+      console.info(JSON.stringify({ event: 'voice_agent_deepgram_connected' }));
       for (const chunk of pendingAudio.splice(0)) socket.send(chunk);
+    });
+
+    socket.on('error', (error) => {
+      console.error(
+        JSON.stringify({
+          event: 'voice_agent_deepgram_error',
+          message: error instanceof Error ? error.message.slice(0, 200) : 'connection_failed',
+        }),
+      );
+    });
+
+    socket.on('close', (code) => {
+      if (!closed) console.error(JSON.stringify({ event: 'voice_agent_deepgram_closed', code }));
     });
 
     socket.on('message', (data) => {
@@ -81,6 +95,12 @@ export class DeepgramSttProvider implements StreamingSttProvider {
       if (message.speech_final) {
         const utterance = finalParts.join(' ').trim() || text;
         finalParts.length = 0;
+        console.info(
+          JSON.stringify({
+            event: 'voice_agent_stt_utterance_final',
+            characters: utterance.length,
+          }),
+        );
         handler?.({
           text: utterance,
           isFinal: true,
