@@ -21,7 +21,7 @@ export const VoiceAgentEnvSchema = z
 
     VOICE_STT_PROVIDER: z.enum(['deepgram', 'mock']).default('deepgram'),
     VOICE_LLM_PROVIDER: z.enum(['deepseek', 'mock']).default('deepseek'),
-    VOICE_TTS_PROVIDER: z.enum(['elevenlabs', 'mock']).default('elevenlabs'),
+    VOICE_TTS_PROVIDER: z.enum(['cartesia', 'elevenlabs', 'mock']).default('elevenlabs'),
 
     DEEPGRAM_API_KEY: z.string().optional(),
     DEEPGRAM_BASE_URL: z.string().url().default('https://api.deepgram.com'),
@@ -48,6 +48,13 @@ export const VoiceAgentEnvSchema = z
     ELEVENLABS_SIMILARITY_BOOST: z.coerce.number().min(0).max(1).default(0.75),
     ELEVENLABS_STYLE: z.coerce.number().min(0).max(1).default(0.2),
     ELEVENLABS_USE_SPEAKER_BOOST: booleanFromString.default(true),
+
+    CARTESIA_API_KEY: z.string().optional(),
+    CARTESIA_BASE_URL: z.string().url().default('https://api.cartesia.ai'),
+    CARTESIA_API_VERSION: z.string().min(1).default('2026-03-01'),
+    CARTESIA_VOICE_ID: z.string().optional(),
+    CARTESIA_MODEL_ID: z.string().min(1).default('sonic-3.5'),
+    CARTESIA_LANGUAGE: z.string().length(2).default('ru'),
 
     VOICE_AGENT_INTERNAL_API_URL: z.string().url(),
     VOICE_AGENT_SERVICE_TOKEN: z.string().min(32),
@@ -98,6 +105,22 @@ export const VoiceAgentEnvSchema = z
           code: 'custom',
           path: ['ELEVENLABS_VOICE_ID'],
           message: 'required when VOICE_TTS_PROVIDER=elevenlabs',
+        });
+      }
+    }
+    if (env.VOICE_TTS_PROVIDER === 'cartesia') {
+      if (!env.CARTESIA_API_KEY) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['CARTESIA_API_KEY'],
+          message: 'required when VOICE_TTS_PROVIDER=cartesia',
+        });
+      }
+      if (!env.CARTESIA_VOICE_ID) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['CARTESIA_VOICE_ID'],
+          message: 'required when VOICE_TTS_PROVIDER=cartesia',
         });
       }
     }

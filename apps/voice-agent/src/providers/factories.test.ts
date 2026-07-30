@@ -58,4 +58,17 @@ describe('provider factories', () => {
     await session.end();
     expect(events).toEqual(['привет']);
   });
+
+  it('creates Cartesia TTS with the configured voice', () => {
+    const env = parseVoiceAgentEnv({
+      ...baseProcessEnv,
+      VOICE_TTS_PROVIDER: 'cartesia',
+      CARTESIA_API_KEY: 'cartesia-key',
+      CARTESIA_VOICE_ID: 'cartesia-voice',
+    });
+
+    const tts = new TtsProviderFactory(env).create();
+    expect(tts.providerId).toBe('cartesia');
+    expect(tts.voiceId).toBe('cartesia-voice');
+  });
 });

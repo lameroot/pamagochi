@@ -27,6 +27,7 @@
 | `DEEPGRAM_API_KEY` | Streaming STT | voice-agent env only | Нет |
 | `DEEPSEEK_API_KEY` | LLM (OpenAI-compatible) | voice-agent env only | Нет |
 | `ELEVENLABS_API_KEY` / `ELEVENLABS_VOICE_ID` | TTS | voice-agent env only | Нет |
+| `CARTESIA_API_KEY` / `CARTESIA_VOICE_ID` | Cartesia TTS (включая русский язык) | voice-agent env only | Нет |
 
 ## ⚠️ Инцидент: утечка реальных credentials в `.env.cloud.example` (обнаружено и исправлено 2026-07-29)
 

@@ -60,4 +60,28 @@ describe('parseVoiceAgentEnv', () => {
     });
     expect(env.VOICE_TTS_PROVIDER).toBe('mock');
   });
+
+  it('requires only Cartesia credentials when Cartesia TTS is selected', () => {
+    const env = parseVoiceAgentEnv({
+      ...base,
+      VOICE_TTS_PROVIDER: 'cartesia',
+      ELEVENLABS_API_KEY: undefined,
+      ELEVENLABS_VOICE_ID: undefined,
+      CARTESIA_API_KEY: 'cartesia-key',
+      CARTESIA_VOICE_ID: 'voice-id',
+    });
+    expect(env.CARTESIA_LANGUAGE).toBe('ru');
+    expect(env.CARTESIA_MODEL_ID).toBe('sonic-3.5');
+  });
+
+  it('rejects a Cartesia configuration without its active credentials', () => {
+    expect(() =>
+      parseVoiceAgentEnv({
+        ...base,
+        VOICE_TTS_PROVIDER: 'cartesia',
+        CARTESIA_API_KEY: undefined,
+        CARTESIA_VOICE_ID: undefined,
+      }),
+    ).toThrow(/CARTESIA_API_KEY.*CARTESIA_VOICE_ID/);
+  });
 });

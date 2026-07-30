@@ -11,6 +11,7 @@ describe('egress-policy (E6.1)', () => {
     'wss://my-project.livekit.cloud',
     'https://api.deepseek.com/chat/completions',
     'https://api.elevenlabs.io/v1/text-to-speech/voice-id',
+    'https://api.cartesia.ai/tts/bytes',
     'http://localhost:3000/internal/agent/sessions/x/context',
     'http://127.0.0.1:3000/internal/agent/usage',
   ];
@@ -44,6 +45,8 @@ describe('egress-policy (E6.1)', () => {
 
   it('allowlist covers all required provider categories', () => {
     const ids = new Set(DEFAULT_EGRESS_ALLOWLIST.map((e) => e.id));
-    expect(ids).toEqual(new Set(['livekit', 'deepgram', 'deepseek', 'elevenlabs', 'internal-api']));
+    expect(ids).toEqual(
+      new Set(['livekit', 'deepgram', 'deepseek', 'elevenlabs', 'cartesia', 'internal-api']),
+    );
   });
 });

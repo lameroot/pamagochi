@@ -32,6 +32,11 @@ export const DEFAULT_EGRESS_ALLOWLIST: readonly EgressAllowlistEntry[] = [
     hostPatterns: [/^api\.elevenlabs\.io$/i, /^[^/]+\.elevenlabs\.io$/i],
   },
   {
+    id: 'cartesia',
+    description: 'Cartesia TTS API',
+    hostPatterns: [/^api\.cartesia\.ai$/i, /^[^/]+\.cartesia\.ai$/i],
+  },
+  {
     id: 'internal-api',
     description: 'Pamagochi internal API (transcript, tools, memory)',
     hostPatterns: [/^localhost$/i, /^127\.0\.0\.1$/i, /^api\./i, /^[^/]+\.onrender\.com$/i],

@@ -6,3 +6,4 @@ export * from './llm/mock-llm.provider.js';
 export * from './llm/deepseek-llm.provider.js';
 export * from './tts/mock-tts.provider.js';
 export * from './tts/elevenlabs-tts.provider.js';
+export * from './tts/cartesia-tts.provider.js';

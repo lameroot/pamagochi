@@ -4,6 +4,7 @@ import { MockSttProvider } from './stt/mock-stt.provider.js';
 import { DeepseekLlmProvider } from './llm/deepseek-llm.provider.js';
 import { MockLlmProvider } from './llm/mock-llm.provider.js';
 import { ElevenLabsTtsProvider } from './tts/elevenlabs-tts.provider.js';
+import { CartesiaTtsProvider } from './tts/cartesia-tts.provider.js';
 import { MockTtsProvider } from './tts/mock-tts.provider.js';
 import type { StreamingSttProvider, StreamingTtsProvider, ToolCallingLlm } from './types.js';
 
@@ -44,6 +45,8 @@ export class TtsProviderFactory {
     switch (provider) {
       case 'elevenlabs':
         return new ElevenLabsTtsProvider(this.env);
+      case 'cartesia':
+        return new CartesiaTtsProvider(this.env);
       case 'mock':
         return new MockTtsProvider();
       default:

@@ -12,7 +12,7 @@
 
 ```bash
 cp .env.local.example .env.local
-# заполнить LIVEKIT_*/DEEPGRAM_*/DEEPSEEK_*/ELEVENLABS_*/VOICE_AGENT_SERVICE_TOKEN
+# заполнить LIVEKIT_*/DEEPGRAM_*/DEEPSEEK_*/(ELEVENLABS_* или CARTESIA_*)/VOICE_AGENT_SERVICE_TOKEN
 pnpm install
 pnpm setup:local
 pnpm --filter @pamagochi/contracts build
@@ -49,7 +49,10 @@ VOICE_GAME_SESSION_ID=<gameSessionId> pnpm --filter @pamagochi/voice-agent dev
 
 Voice-agent сам читает `.env.local`; не передавайте ключи через браузер или в URL.
 Для настоящего потока установите `VOICE_STT_PROVIDER=deepgram`,
-`VOICE_LLM_PROVIDER=deepseek`, `VOICE_TTS_PROVIDER=elevenlabs`. TTS запрашивается
+`VOICE_LLM_PROVIDER=deepseek` и один из TTS: `VOICE_TTS_PROVIDER=elevenlabs` или
+`VOICE_TTS_PROVIDER=cartesia`. Для Cartesia нужны `CARTESIA_API_KEY` и
+`CARTESIA_VOICE_ID` (выберите голос в [Cartesia Playground](https://play.cartesia.ai/));
+по умолчанию используется `sonic-3.5` с `CARTESIA_LANGUAGE=ru`. TTS запрашивается
 как PCM 24 kHz и публикуется agent-участником в LiveKit; микрофон ребёнка
 нормализуется до PCM 16 kHz перед Deepgram.
 
