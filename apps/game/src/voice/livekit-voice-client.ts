@@ -73,11 +73,22 @@ export class LiveKitVoiceClient implements VoiceClient {
       if (track.kind !== Track.Kind.Audio) return;
       const element = track.attach();
       if (element instanceof HTMLAudioElement) {
+        this.agentAudio?.pause();
+        this.agentAudio?.remove();
         this.agentAudio = element;
         element.autoplay = true;
-        void element.play().catch(() => {
-          /* autoplay policy — scene stays visual-only */
-        });
+        element.dataset.pamagochiVoice = 'agent-audio';
+        element.setAttribute('aria-hidden', 'true');
+        element.style.display = 'none';
+        // Keep the media element in the document. A detached <audio> element
+        // is not reliably rendered by browsers, even when its MediaStream is
+        // playing, so LiveKit audio could be received but remain silent.
+        document.body.append(element);
+        void element.play().then(
+          () => console.info('[voice] agent audio playback started'),
+          (error: unknown) =>
+            console.warn('[voice] agent audio playback was blocked by the browser', error),
+        );
       }
     });
 
@@ -100,6 +111,7 @@ export class LiveKitVoiceClient implements VoiceClient {
 
   async disconnect(): Promise<void> {
     this.agentAudio?.pause();
+    this.agentAudio?.remove();
     this.agentAudio = undefined;
     await this.room?.disconnect();
     this.room = undefined;

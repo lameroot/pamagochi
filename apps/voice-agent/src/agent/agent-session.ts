@@ -409,10 +409,15 @@ export class AgentSession {
       if (!firstAudio) {
         firstAudio = true;
         this.metrics.recordTtsFirstAudio();
+        console.info(JSON.stringify({ event: 'voice_agent_tts_audio_received' }));
       }
       const played = Math.floor(reply.length * 0.5);
       this.bargeIn.updatePlayedLength(played);
-      void this.deps.transport.publishAudio(audio);
+      void this.deps.transport.publishAudio(audio).catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : 'tts_audio_publish_failed';
+        this.metrics.recordError(message);
+        console.error(JSON.stringify({ event: 'voice_agent_tts_audio_publish_failed', message }));
+      });
     });
 
     try {

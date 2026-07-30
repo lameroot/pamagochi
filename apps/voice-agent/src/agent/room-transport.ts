@@ -123,6 +123,7 @@ export class LiveKitRoomTransport implements RoomTransport {
   private audioTrack?: LocalAudioTrack;
   private pendingTtsByte?: number;
   private receivedAudioFrames = 0;
+  private publishedTtsFrames = 0;
 
   constructor(
     private readonly env: VoiceAgentEnv,
@@ -195,6 +196,10 @@ export class LiveKitRoomTransport implements RoomTransport {
     const data = new Int16Array(evenLength / 2);
     new Uint8Array(data.buffer).set(input.subarray(0, evenLength));
     await this.audioSource.captureFrame(new AudioFrame(data, 24_000, 1, data.length));
+    this.publishedTtsFrames += 1;
+    if (this.publishedTtsFrames === 1) {
+      console.info(JSON.stringify({ event: 'voice_agent_tts_audio_published' }));
+    }
   }
 
   onAudio(handler: (chunk: Uint8Array) => void): void {
