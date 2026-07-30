@@ -124,6 +124,7 @@ export class LiveKitRoomTransport implements RoomTransport {
   private pendingTtsByte?: number;
   private receivedAudioFrames = 0;
   private publishedTtsFrames = 0;
+  private ttsCaptureQueue: Promise<void> = Promise.resolve();
 
   constructor(
     private readonly env: VoiceAgentEnv,
@@ -184,7 +185,19 @@ export class LiveKitRoomTransport implements RoomTransport {
 
   async publishAudio(chunk: Uint8Array): Promise<void> {
     if (!this.connected) throw new Error('Room is not connected');
-    if (!this.audioSource || chunk.byteLength === 0) return;
+    if (chunk.byteLength === 0) return;
+
+    // ElevenLabs invokes onAudio as fast as network chunks arrive, while
+    // rtc-node AudioSource accepts captureFrame calls one at a time. Preserve
+    // packet order and wait for each frame before handing it the next one.
+    const copiedChunk = Uint8Array.from(chunk);
+    const capture = this.ttsCaptureQueue.then(() => this.captureTtsChunk(copiedChunk));
+    this.ttsCaptureQueue = capture.catch(() => undefined);
+    await capture;
+  }
+
+  private async captureTtsChunk(chunk: Uint8Array): Promise<void> {
+    if (!this.connected || !this.audioSource) return;
 
     // Avoid creating an Int16Array view over an unaligned ArrayBuffer. The
     // provider response is little-endian S16LE by contract.
