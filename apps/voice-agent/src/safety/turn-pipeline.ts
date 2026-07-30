@@ -80,6 +80,7 @@ export async function runInputPipeline(
 
   let systemPrompt: string | undefined;
   if (hooks.promptAssembler && hooks.safetyPolicy && hooks.soulText) {
+    const memoryContext = input.context.memoryContext;
     const assembled = hooks.promptAssembler.assemble({
       safetyPolicy: hooks.safetyPolicy,
       soulText: hooks.soulText,
@@ -89,6 +90,9 @@ export async function runInputPipeline(
         hooks.roleDescription ??
         'You are Pamagochi, a warm voice companion in a child adventure game.',
       childProfile: { displayName: input.context.displayName },
+      relationship: memoryContext?.relationship ?? undefined,
+      approvedMemory: memoryContext?.memoryItems,
+      previousSummary: memoryContext?.previousSummary ?? undefined,
       allowedTools: hooks.allowedTools ?? ['character_emote'],
     });
     systemPrompt = assembled.systemPrompt;

@@ -7,6 +7,7 @@ import { GameSessionsModule } from './game-sessions/game-sessions.module.js';
 import { HealthModule } from './health/health.module.js';
 import { InternalModule } from './internal/internal.module.js';
 import { JobsModule } from './jobs/jobs.module.js';
+import { ParentCabinetModule } from './parent-cabinet/parent-cabinet.module.js';
 import { ProfilesModule } from './profiles/profiles.module.js';
 import { StorageModule } from './storage/storage.module.js';
 
@@ -19,6 +20,7 @@ import { StorageModule } from './storage/storage.module.js';
     DevLoginModule.forRoot(),
     HealthModule,
     ProfilesModule,
+    ParentCabinetModule,
     GameSessionsModule,
     InternalModule,
     StorageModule.forRoot(),

@@ -1,6 +1,7 @@
 export * from './identity.js';
 export * from './errors.js';
 export * from './parent.js';
+export * from './parent-cabinet.js';
 export * from './child.js';
 export * from './skill.js';
 export * from './quest.js';

@@ -9,6 +9,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../src/app.module.js';
 import { GlobalHttpExceptionFilter } from '../src/common/http-exception.filter.js';
 import { PrismaService } from '../src/database/prisma.service.js';
+import { seedActivePromptVersions } from './seed-fixtures.js';
 
 /**
  * Requires a real, reachable PostgreSQL instance (see infra/local/compose.yaml
@@ -25,10 +26,10 @@ describe('API integration', () => {
       logger: false,
     });
     app.useGlobalFilters(new GlobalHttpExceptionFilter());
+    prisma = app.get(PrismaService);
+    await seedActivePromptVersions(prisma);
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
-
-    prisma = app.get(PrismaService);
 
     const loginResponse = await app.getHttpAdapter().getInstance().inject({
       method: 'POST',

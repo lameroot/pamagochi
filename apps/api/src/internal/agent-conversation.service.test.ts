@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { AgentConversationService } from './agent-conversation.service.js';
+import { SESSION_FINALIZE_JOB } from './session-finalize.service.js';
 
 describe('AgentConversationService', () => {
   it('returns existing turn for duplicate idempotency key', async () => {
@@ -21,7 +22,7 @@ describe('AgentConversationService', () => {
     const prisma = {
       client: {
         conversationSession: {
-          findUnique: async () => ({ id: 'cs1', status: 'active' }),
+          findUnique: async () => ({ id: 'cs1', status: 'active', child: { deletedAt: null } }),
         },
         conversationTurn: {
           findFirst: async () => existingTurn,
@@ -32,7 +33,8 @@ describe('AgentConversationService', () => {
       },
     };
 
-    const service = new AgentConversationService(prisma as never);
+    const jobs = { dispatch: vi.fn() };
+    const service = new AgentConversationService(prisma as never, jobs as never);
     const result = await service.appendTurn('cs1', {
       idempotencyKey: 'key-1',
       sequenceNo: 0,
@@ -46,5 +48,50 @@ describe('AgentConversationService', () => {
 
     expect(result.created).toBe(false);
     expect(result.turn.id).toBe('turn-1');
+  });
+
+  it('finalize is idempotent for terminal sessions', async () => {
+    const prisma = {
+      client: {
+        conversationSession: {
+          findUnique: async () => ({
+            id: 'cs1',
+            status: 'completed',
+            child: { deletedAt: null },
+          }),
+          update: async () => {
+            throw new Error('should not update');
+          },
+        },
+      },
+    };
+    const jobs = { dispatch: vi.fn() };
+    const service = new AgentConversationService(prisma as never, jobs as never);
+    const result = await service.finalize('cs1', { status: 'completed' });
+    expect(result.status).toBe('completed');
+    expect(jobs.dispatch).not.toHaveBeenCalled();
+  });
+
+  it('dispatches finalize job for active sessions', async () => {
+    const prisma = {
+      client: {
+        conversationSession: {
+          findUnique: async () => ({
+            id: 'cs1',
+            status: 'active',
+            sessionSummary: null,
+            child: { deletedAt: null },
+          }),
+          update: async () => ({ id: 'cs1', status: 'finalizing' }),
+        },
+      },
+    };
+    const jobs = { dispatch: vi.fn() };
+    const service = new AgentConversationService(prisma as never, jobs as never);
+    const result = await service.finalize('cs1', { status: 'completed' });
+    expect(result.status).toBe('finalizing');
+    expect(jobs.dispatch).toHaveBeenCalledWith(SESSION_FINALIZE_JOB, {
+      conversationSessionId: 'cs1',
+    });
   });
 });

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { agentStateSchema } from './agent-state.js';
+import { memoryContextSchema } from './memory.js';
 
 /**
  * Limited game-session bootstrap exchanged between apps/game and apps/api.
@@ -59,5 +60,6 @@ export const voiceSessionContextSchema = z.object({
   soulVersion: z.string().min(1).max(32),
   safetyPolicyVersion: z.string().min(1).max(32),
   livekitRoomName: z.string().min(1),
+  memoryContext: memoryContextSchema.optional(),
 });
 export type VoiceSessionContext = z.infer<typeof voiceSessionContextSchema>;

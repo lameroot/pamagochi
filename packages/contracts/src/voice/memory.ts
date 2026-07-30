@@ -61,3 +61,11 @@ export const relationshipStateSchema = z.object({
   updatedAt: z.string().datetime(),
 });
 export type RelationshipStateDto = z.infer<typeof relationshipStateSchema>;
+
+export const memoryContextSchema = z.object({
+  previousSummary: z.string().max(4000).nullable(),
+  memoryItems: z.array(memoryItemSchema),
+  relationship: relationshipStateSchema.nullable(),
+  selectionReasons: z.array(z.string().max(200)).default([]),
+});
+export type MemoryContextDto = z.infer<typeof memoryContextSchema>;

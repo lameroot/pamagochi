@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type {
   AppendConversationTurnRequest,
   AppendConversationTurnResponse,
@@ -7,6 +7,8 @@ import type {
 } from '@pamagochi/contracts';
 import type { ConversationSpeaker, ConversationSessionStatus } from '@pamagochi/database';
 import { PrismaService } from '../database/prisma.service.js';
+import { JOB_DISPATCHER, type JobDispatcher } from '../jobs/job-dispatcher.js';
+import { SESSION_FINALIZE_JOB } from './session-finalize.service.js';
 
 function toTurnDto(turn: {
   id: string;
@@ -45,7 +47,10 @@ function toTurnDto(turn: {
 
 @Injectable()
 export class AgentConversationService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(JOB_DISPATCHER) private readonly jobs: JobDispatcher,
+  ) {}
 
   async appendTurn(
     conversationSessionId: string,
@@ -53,8 +58,14 @@ export class AgentConversationService {
   ): Promise<AppendConversationTurnResponse> {
     const session = await this.prisma.client.conversationSession.findUnique({
       where: { id: conversationSessionId },
+      include: { child: true },
     });
-    if (!session || session.status === 'completed' || session.status === 'cancelled') {
+    if (
+      !session ||
+      session.child.deletedAt ||
+      session.status === 'completed' ||
+      session.status === 'cancelled'
+    ) {
       throw new NotFoundException('Conversation session is not available');
     }
 
@@ -87,10 +98,7 @@ export class AgentConversationService {
     return { turn: toTurnDto(turn), created: true };
   }
 
-  async finalize(
-    conversationSessionId: string,
-    body: FinalizeConversationSessionRequest,
-  ): Promise<{ id: string; status: ConversationSessionStatus }> {
+  async listTurns(conversationSessionId: string): Promise<ConversationTurnDto[]> {
     const session = await this.prisma.client.conversationSession.findUnique({
       where: { id: conversationSessionId },
     });
@@ -98,16 +106,76 @@ export class AgentConversationService {
       throw new NotFoundException('Conversation session is not available');
     }
 
-    const status = body.status as ConversationSessionStatus;
+    const turns = await this.prisma.client.conversationTurn.findMany({
+      where: { conversationSessionId },
+      orderBy: { sequenceNo: 'asc' },
+    });
+    return turns.map(toTurnDto);
+  }
+
+  async finalize(
+    conversationSessionId: string,
+    body: FinalizeConversationSessionRequest,
+  ): Promise<{ id: string; status: ConversationSessionStatus }> {
+    const session = await this.prisma.client.conversationSession.findUnique({
+      where: { id: conversationSessionId },
+      include: { child: true },
+    });
+    if (!session || session.child.deletedAt) {
+      throw new NotFoundException('Conversation session is not available');
+    }
+
+    const terminalStatuses: ConversationSessionStatus[] = ['completed', 'failed', 'cancelled'];
+    if (terminalStatuses.includes(session.status)) {
+      return { id: session.id, status: session.status };
+    }
+
+    const targetStatus = body.status as ConversationSessionStatus;
+    const isFailure = targetStatus === 'failed' || targetStatus === 'cancelled';
+
     const updated = await this.prisma.client.conversationSession.update({
       where: { id: conversationSessionId },
       data: {
-        status,
+        status: isFailure ? targetStatus : 'finalizing',
         endedAt: new Date(),
         sessionSummary: body.sessionSummary ?? session.sessionSummary,
       },
     });
 
-    return { id: updated.id, status: updated.status };
+    if (!isFailure) {
+      void this.jobs.dispatch(SESSION_FINALIZE_JOB, { conversationSessionId });
+    } else {
+      await this.prisma.client.conversationSession.update({
+        where: { id: conversationSessionId },
+        data: { status: targetStatus },
+      });
+    }
+
+    return { id: updated.id, status: isFailure ? targetStatus : 'finalizing' };
+  }
+
+  async recordUsage(
+    conversationSessionId: string,
+    usage: {
+      costInputTokens?: number;
+      costOutputTokens?: number;
+      costTtsChars?: number;
+      costSttSeconds?: number;
+    },
+  ): Promise<void> {
+    const session = await this.prisma.client.conversationSession.findUnique({
+      where: { id: conversationSessionId },
+    });
+    if (!session) return;
+
+    await this.prisma.client.conversationSession.update({
+      where: { id: conversationSessionId },
+      data: {
+        costInputTokens: { increment: usage.costInputTokens ?? 0 },
+        costOutputTokens: { increment: usage.costOutputTokens ?? 0 },
+        costTtsChars: { increment: usage.costTtsChars ?? 0 },
+        costSttSeconds: { increment: usage.costSttSeconds ?? 0 },
+      },
+    });
   }
 }

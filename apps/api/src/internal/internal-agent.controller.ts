@@ -13,17 +13,21 @@ import type { FastifyReply } from 'fastify';
 import {
   agentToolRequestSchema,
   appendConversationTurnRequestSchema,
+  createSafetyEventRequestSchema,
   finalizeConversationSessionRequestSchema,
   type ActivePromptVersionsResponse,
   type AgentToolResult,
   type AppendConversationTurnResponse,
+  type SafetyEventDto,
   type VoiceSessionContext,
 } from '@pamagochi/contracts';
 import { z } from 'zod';
 import { PrismaService } from '../database/prisma.service.js';
 import { ageBandFromBirth } from '../game-sessions/age-band.js';
+import { MemoryContextService } from './memory-context.service.js';
 import { AgentConversationService } from './agent-conversation.service.js';
 import { PromptVersionService } from './prompt-version.service.js';
+import { SafetyEventService } from './safety-event.service.js';
 import { ServiceAuthGuard } from './service-auth.guard.js';
 import { ToolValidationService } from './tool-validation.service.js';
 
@@ -43,6 +47,8 @@ export class InternalAgentController {
     private readonly conversation: AgentConversationService,
     private readonly tools: ToolValidationService,
     private readonly promptVersions: PromptVersionService,
+    private readonly safetyEvents: SafetyEventService,
+    private readonly memory: MemoryContextService,
   ) {}
 
   @Get('sessions/:gameSessionId/context')
@@ -85,6 +91,8 @@ export class InternalAgentController {
       });
     }
 
+    const memoryContext = await this.memory.buildMemoryContext(session.childId);
+
     return {
       protocolVersion: '1',
       gameSessionId: session.id,
@@ -99,6 +107,7 @@ export class InternalAgentController {
       soulVersion: conversation.soulVersion ?? '0.1.0',
       safetyPolicyVersion: conversation.safetyPolicyVersion ?? '0.1.0',
       livekitRoomName: conversation.livekitRoomId,
+      memoryContext,
     };
   }
 
@@ -121,6 +130,15 @@ export class InternalAgentController {
   ): Promise<{ id: string; status: string }> {
     const parsed = finalizeConversationSessionRequestSchema.parse(body);
     return this.conversation.finalize(conversationSessionId, parsed);
+  }
+
+  @Post('sessions/:conversationSessionId/safety-events')
+  async createSafetyEvent(
+    @Param('conversationSessionId') conversationSessionId: string,
+    @Body() body: unknown,
+  ): Promise<SafetyEventDto> {
+    const parsed = createSafetyEventRequestSchema.parse(body);
+    return this.safetyEvents.createForSession(conversationSessionId, parsed);
   }
 
   @Post('sessions/:conversationSessionId/tools')

@@ -138,4 +138,8 @@ export class AppConfigService {
   get voiceGlobalDailyBudgetUsd(): number {
     return this.env.VOICE_GLOBAL_DAILY_BUDGET_USD ?? 500;
   }
+
+  get audioRecordingEnabled(): boolean {
+    return this.env.AUDIO_RECORDING_ENABLED ?? false;
+  }
 }
