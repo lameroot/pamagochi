@@ -35,7 +35,7 @@ Use parent app or API dev login to create a child and `POST /api/children/:id/ga
 
 ```bash
 pnpm --filter @pamagochi/game dev
-# Open http://localhost:5173/?token=<limitedGameToken>
+# Open http://localhost:5174/?token=<limitedGameToken>
 ```
 
 The scene will:
@@ -103,8 +103,7 @@ pnpm --filter @pamagochi/api typecheck
 
 `apps/voice-agent/src/agent/vertical-slice.test.ts` runs a mock multi-turn flow with interruption, idempotent transcript append, tool invoke, and metrics assertions.
 
-## Known gaps (E1)
+## Known constraints (E1)
 
-- LiveKit **data channel** publishing from `LiveKitRoomTransport` is scaffolded; mock transport covers tests and local protocol validation.
 - Real STT/LLM/TTS providers require API keys; use `mock` selectors for offline development.
 - Game autoplay may require a user gesture in some browsers before agent audio plays (visual states still work).

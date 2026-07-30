@@ -15,6 +15,7 @@ import {
 } from '../providers/factories.js';
 import type {
   StreamingSttProvider,
+  StreamingSttSession,
   StreamingTtsProvider,
   StreamingTtsSession,
   ToolCallingLlm,
@@ -65,6 +66,8 @@ export class AgentSession {
   private sceneKey: string;
   private readonly safetyHooks?: AgentSafetyHooks;
   private activeTts?: StreamingTtsSession;
+  private sttSession?: StreamingSttSession;
+  private transcriptQueue: Promise<void> = Promise.resolve();
   private readonly stateListeners = new Set<(state: AgentState) => void>();
 
   constructor(private readonly deps: AgentSessionDeps) {
@@ -103,6 +106,18 @@ export class AgentSession {
     this.context = await this.contextClient.fetch(gameSessionId);
     this.sceneKey = this.context.sceneKey ?? this.deps.sceneKey ?? this.sceneKey;
     await this.deps.transport.connect();
+    this.sttSession = this.stt.startSession({ language: this.context?.primaryLanguage });
+    this.sttSession.onTranscript((event) => {
+      if (!event.isFinal || !event.text.trim()) return;
+      // Endpointing can complete a new utterance while the previous LLM turn
+      // is still persisting. Keep the child conversation deterministic.
+      this.transcriptQueue = this.transcriptQueue
+        .then(() => this.handleFinalTranscript(event.text.trim()).then(() => undefined))
+        .catch((error: unknown) => {
+          const message = error instanceof Error ? error.message : 'stt_transcript_failed';
+          this.metrics.recordError(message);
+        });
+    });
     await this.setState('listening');
 
     this.deps.transport.onAudio((chunk) => {
@@ -247,6 +262,11 @@ export class AgentSession {
   async close(): Promise<void> {
     if (this.closed) return;
     this.closed = true;
+    await this.sttSession?.end().catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : 'stt_close_failed';
+      this.metrics.recordError(message);
+    });
+    this.sttSession = undefined;
     if (this.context) {
       try {
         await this.transcriptClient.finalize(this.context.conversationSessionId, {
@@ -351,18 +371,8 @@ export class AgentSession {
     }
 
     this.metrics.recordSttPartial();
-    const session = this.stt.startSession({ language: this.context?.primaryLanguage });
-    let finalText = '';
-    session.onTranscript((event) => {
-      if (event.isFinal) finalText = event.text;
-    });
-    session.writeAudio(chunk);
-    await session.end();
+    this.sttSession?.writeAudio(chunk);
     this.metrics.addUsage({ sttSeconds: 1 });
-
-    if (finalText.trim()) {
-      await this.handleFinalTranscript(finalText.trim());
-    }
   }
 
   private async speakReply(reply: string): Promise<{

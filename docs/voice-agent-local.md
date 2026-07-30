@@ -25,7 +25,33 @@ pnpm --filter @pamagochi/parent build
 ```
 
 Локальный профиль по-прежнему не требует Supabase/Render/Cloudflare.
-LiveKit и provider API нужны только для реального голосового среза (E1+).
+LiveKit и provider API нужны для реального голосового среза. `apps/game` работает на
+`http://localhost:5174`, `apps/parent` — на `http://localhost:5175`, поэтому оба
+origin уже указаны в `.env.local.example`.
+
+## Проверка реального голоса
+
+После `pnpm setup:local` запустите в отдельных терминалах:
+
+```bash
+pnpm dev:local
+pnpm --filter @pamagochi/parent dev
+pnpm --filter @pamagochi/game dev
+```
+
+В кабинете родителя (`http://localhost:5175`) создайте ребёнка и нажмите
+«Запустить игру». В ответе запроса `POST /api/children/:childId/game-sessions`
+возьмите `gameSessionId`, затем запустите worker:
+
+```bash
+VOICE_GAME_SESSION_ID=<gameSessionId> pnpm --filter @pamagochi/voice-agent dev
+```
+
+Voice-agent сам читает `.env.local`; не передавайте ключи через браузер или в URL.
+Для настоящего потока установите `VOICE_STT_PROVIDER=deepgram`,
+`VOICE_LLM_PROVIDER=deepseek`, `VOICE_TTS_PROVIDER=elevenlabs`. TTS запрашивается
+как PCM 24 kHz и публикуется agent-участником в LiveKit; микрофон ребёнка
+нормализуется до PCM 16 kHz перед Deepgram.
 
 ## Границы секретов
 

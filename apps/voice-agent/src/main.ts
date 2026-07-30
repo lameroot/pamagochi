@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs';
+import { config as loadDotenv } from 'dotenv';
 import { parseVoiceAgentEnv } from './config/env.schema.js';
 import { AgentSession } from './agent/agent-session.js';
 import { LiveKitRoomTransport, MockRoomTransport } from './agent/room-transport.js';
@@ -13,6 +15,14 @@ import { SoulLoader } from './soul/soul-loader.js';
  *   VOICE_ROOM_TRANSPORT=mock for local dry-run without LiveKit media
  */
 async function main(): Promise<void> {
+  // `pnpm --filter @pamagochi/voice-agent dev` does not pass through the
+  // repository profile runner. Load the same local file explicitly, while
+  // never overriding variables injected by a process manager/CI.
+  const envPath =
+    process.env.APP_PROFILE === 'cloud' && existsSync('.env.cloud.local')
+      ? '.env.cloud.local'
+      : '.env.local';
+  loadDotenv({ path: envPath, quiet: true });
   const env = parseVoiceAgentEnv(process.env);
   const gameSessionId = process.env.VOICE_GAME_SESSION_ID;
 

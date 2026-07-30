@@ -47,31 +47,46 @@ export class ElevenLabsTtsProvider implements StreamingTtsProvider {
           return;
         }
 
-        const response = await egressFetch(`${baseUrl}/v1/text-to-speech/${voiceId}/stream`, {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-            'xi-api-key': env.ELEVENLABS_API_KEY!,
-            accept: 'audio/mpeg',
-          },
-          body: JSON.stringify({
-            text,
-            model_id: modelId,
-            voice_settings: {
-              stability: env.ELEVENLABS_STABILITY,
-              similarity_boost: env.ELEVENLABS_SIMILARITY_BOOST,
-              style: env.ELEVENLABS_STYLE,
-              use_speaker_boost: env.ELEVENLABS_USE_SPEAKER_BOOST,
+        // LiveKit's server SDK accepts PCM frames. Requesting MP3 here made
+        // playback impossible without a decoder and added avoidable latency.
+        const response = await egressFetch(
+          `${baseUrl}/v1/text-to-speech/${voiceId}/stream?output_format=pcm_24000`,
+          {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+              'xi-api-key': env.ELEVENLABS_API_KEY!,
+              accept: 'audio/pcm',
             },
-          }),
-        });
+            body: JSON.stringify({
+              text,
+              model_id: modelId,
+              voice_settings: {
+                stability: env.ELEVENLABS_STABILITY,
+                similarity_boost: env.ELEVENLABS_SIMILARITY_BOOST,
+                style: env.ELEVENLABS_STYLE,
+                use_speaker_boost: env.ELEVENLABS_USE_SPEAKER_BOOST,
+              },
+            }),
+          },
+        );
 
         if (!response.ok) {
           throw new Error(`ElevenLabs request failed with status ${response.status}`);
         }
 
-        const buffer = new Uint8Array(await response.arrayBuffer());
-        handler?.(buffer);
+        const reader = response.body?.getReader();
+        if (!reader) throw new Error('ElevenLabs response has no audio body');
+        try {
+          while (!interrupted) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (value?.byteLength) handler?.(value);
+          }
+        } finally {
+          if (interrupted) await reader.cancel();
+          reader.releaseLock();
+        }
       },
       onAudio(next) {
         handler = next;
