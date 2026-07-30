@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { agentStateSchema } from './agent-state.js';
 import { memoryContextSchema } from './memory.js';
+import { introProgressDtoSchema } from './intro-progress.js';
 
 /**
  * Limited game-session bootstrap exchanged between apps/game and apps/api.
@@ -46,6 +47,8 @@ export const gameBootstrapResponseSchema = z.object({
   }),
   initialAgentState: agentStateSchema.default('connecting'),
   sceneKey: z.string().min(1).max(64),
+  sceneState: z.string().min(1).max(64).optional(),
+  introProgress: introProgressDtoSchema.optional(),
 });
 export type GameBootstrapResponse = z.infer<typeof gameBootstrapResponseSchema>;
 
@@ -61,5 +64,9 @@ export const voiceSessionContextSchema = z.object({
   safetyPolicyVersion: z.string().min(1).max(32),
   livekitRoomName: z.string().min(1),
   memoryContext: memoryContextSchema.optional(),
+  sceneKey: z.string().min(1).max(64).optional(),
+  sceneState: z.string().min(1).max(64).optional(),
+  worldState: z.record(z.string(), z.unknown()).optional(),
+  goal: z.string().max(500).optional(),
 });
 export type VoiceSessionContext = z.infer<typeof voiceSessionContextSchema>;

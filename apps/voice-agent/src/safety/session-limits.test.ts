@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import {
-  SessionLimits,
-  SimpleCircuitBreaker,
-  createInitialUsage,
-  type SessionLimitConfig,
-} from './session-limits.js';
+import { SessionLimits, createInitialUsage, type SessionLimitConfig } from './session-limits.js';
+import { SimpleCircuitBreaker } from '@pamagochi/agent-core';
 
 const config: SessionLimitConfig = {
   maxDurationSeconds: 60,

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import type { AgentState, CharacterEmotion } from '@[REDACTED]/contracts';
+import type { AgentState, CharacterEmotion } from '@pamagochi/contracts';
 import {
   agentStatePulseScale,
   emotionAccentColor,

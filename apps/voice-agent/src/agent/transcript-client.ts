@@ -5,6 +5,7 @@ import {
   finalizeConversationSessionRequestSchema,
 } from '@pamagochi/contracts';
 import type { VoiceAgentEnv } from '../config/env.schema.js';
+import { egressFetch } from '../safety/egress-fetch.js';
 
 export class TranscriptClient {
   constructor(private readonly env: VoiceAgentEnv) {}
@@ -15,7 +16,7 @@ export class TranscriptClient {
   ): Promise<AppendConversationTurnResponse> {
     const body = appendConversationTurnRequestSchema.parse(turn);
     const url = `${this.env.VOICE_AGENT_INTERNAL_API_URL.replace(/\/$/, '')}/sessions/${conversationSessionId}/turns`;
-    const response = await fetch(url, {
+    const response = await egressFetch(url, {
       method: 'POST',
       headers: {
         authorization: `Bearer ${this.env.VOICE_AGENT_SERVICE_TOKEN}`,
@@ -37,7 +38,7 @@ export class TranscriptClient {
   ): Promise<void> {
     const body = finalizeConversationSessionRequestSchema.parse(input);
     const url = `${this.env.VOICE_AGENT_INTERNAL_API_URL.replace(/\/$/, '')}/sessions/${conversationSessionId}/finalize`;
-    const response = await fetch(url, {
+    const response = await egressFetch(url, {
       method: 'POST',
       headers: {
         authorization: `Bearer ${this.env.VOICE_AGENT_SERVICE_TOKEN}`,

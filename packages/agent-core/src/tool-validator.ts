@@ -196,6 +196,13 @@ export class ToolValidator {
           return 'rejected_state';
         }
         return null;
+      case 'character_gesture': {
+        const gestureIds = (allowlist as { allowedGestureIds?: string[] }).allowedGestureIds;
+        if (gestureIds && !gestureIds.includes(request.arguments.gesture)) {
+          return 'rejected_state';
+        }
+        return null;
+      }
       default:
         return null;
     }

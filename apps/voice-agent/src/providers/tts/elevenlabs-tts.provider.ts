@@ -1,4 +1,5 @@
 import type { VoiceAgentEnv } from '../../config/env.schema.js';
+import { egressFetch } from '../../safety/egress-fetch.js';
 import type { StreamingTtsProvider, StreamingTtsSession } from '../types.js';
 
 /**
@@ -46,7 +47,7 @@ export class ElevenLabsTtsProvider implements StreamingTtsProvider {
           return;
         }
 
-        const response = await fetch(`${baseUrl}/v1/text-to-speech/${voiceId}/stream`, {
+        const response = await egressFetch(`${baseUrl}/v1/text-to-speech/${voiceId}/stream`, {
           method: 'POST',
           headers: {
             'content-type': 'application/json',

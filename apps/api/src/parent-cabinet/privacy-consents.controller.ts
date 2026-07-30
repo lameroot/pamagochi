@@ -6,6 +6,7 @@ import {
 } from '@pamagochi/contracts';
 import type { ParentAccount } from '@pamagochi/database';
 import { AuthGuard } from '../auth/auth.guard.js';
+import { ParentApiRateLimitGuard } from '../common/rate-limit.guard.js';
 import { CurrentParent } from '../auth/current-parent.decorator.js';
 import { PrismaService } from '../database/prisma.service.js';
 import { ChildOwnershipService } from '../profiles/child-ownership.service.js';
@@ -36,7 +37,7 @@ function serializeConsent(consent: {
 }
 
 @Controller('api/children/:childId/consents')
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, ParentApiRateLimitGuard)
 export class PrivacyConsentsController {
   constructor(
     private readonly prisma: PrismaService,

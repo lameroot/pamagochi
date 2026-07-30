@@ -1,7 +1,9 @@
 import {
-  characterEmotionSchema,
+  agentToolNameSchema,
+  agentToolRequestSchema,
   type AgentState,
-  type CharacterEmotion,
+  type AgentToolName,
+  type AgentToolRequest,
   type VoiceSessionContext,
 } from '@pamagochi/contracts';
 import type { VoiceAgentEnv } from '../config/env.schema.js';
@@ -19,9 +21,11 @@ import type {
 } from '../providers/types.js';
 import { BargeInTracker } from './barge-in.js';
 import type { RoomTransport } from './room-transport.js';
+import { llmToolsForAllowlist, resolveSceneAllowlist } from './scene-tools.js';
 import { SessionContextClient } from './session-context-client.js';
 import { TranscriptClient } from './transcript-client.js';
 import { ToolInvokeClient } from './tool-invoke-client.js';
+import { UsageClient } from './usage-client.js';
 import type { AgentSafetyHooks } from '../safety/turn-pipeline.js';
 import { runInputPipeline, runOutputPipeline } from '../safety/turn-pipeline.js';
 
@@ -31,6 +35,7 @@ export interface AgentSessionDeps {
   contextClient?: SessionContextClient;
   transcriptClient?: TranscriptClient;
   toolClient?: ToolInvokeClient;
+  usageClient?: UsageClient;
   stt?: StreamingSttProvider;
   llm?: ToolCallingLlm;
   tts?: StreamingTtsProvider;
@@ -54,9 +59,10 @@ export class AgentSession {
   private readonly contextClient: SessionContextClient;
   private readonly transcriptClient: TranscriptClient;
   private readonly toolClient: ToolInvokeClient;
+  private readonly usageClient: UsageClient;
   private readonly metrics: VoiceMetricsCollector;
   private readonly bargeIn = new BargeInTracker();
-  private readonly sceneKey: string;
+  private sceneKey: string;
   private readonly safetyHooks?: AgentSafetyHooks;
   private activeTts?: StreamingTtsSession;
   private readonly stateListeners = new Set<(state: AgentState) => void>();
@@ -65,6 +71,7 @@ export class AgentSession {
     this.contextClient = deps.contextClient ?? new SessionContextClient(deps.env);
     this.transcriptClient = deps.transcriptClient ?? new TranscriptClient(deps.env);
     this.toolClient = deps.toolClient ?? new ToolInvokeClient(deps.env);
+    this.usageClient = deps.usageClient ?? new UsageClient(deps.env);
     this.metrics = deps.metrics ?? new VoiceMetricsCollector();
     this.sceneKey = deps.sceneKey ?? 'talking-light';
     this.safetyHooks = deps.safetyHooks;
@@ -94,6 +101,7 @@ export class AgentSession {
     if (this.closed) throw new Error('Session already closed');
     await this.setState('connecting');
     this.context = await this.contextClient.fetch(gameSessionId);
+    this.sceneKey = this.context.sceneKey ?? this.deps.sceneKey ?? this.sceneKey;
     await this.deps.transport.connect();
     await this.setState('listening');
 
@@ -116,7 +124,17 @@ export class AgentSession {
 
     await this.setState('thinking');
 
-    const pipeline = await runInputPipeline(this.safetyHooks, {
+    const allowlist = resolveSceneAllowlist(this.sceneKey, this.context.sceneState);
+    const allowedTools = (this.safetyHooks?.allowedTools ??
+      allowlist.allowedToolNames.filter(
+        (name): name is AgentToolName => agentToolNameSchema.safeParse(name).success,
+      )) as AgentToolName[];
+
+    const hooks: AgentSafetyHooks | undefined = this.safetyHooks
+      ? { ...this.safetyHooks, allowedTools }
+      : undefined;
+
+    const pipeline = await runInputPipeline(hooks, {
       context: this.context,
       userText: text,
       turnId: `turn-${childSeq}`,
@@ -138,62 +156,58 @@ export class AgentSession {
       pipeline.systemPrompt ??
       `You are Pamagochi. Child age band: ${this.context.ageBand}. Language: ${this.context.primaryLanguage}. Keep replies short.`;
 
-    for await (const chunk of this.llm.complete({
-      messages: [
-        {
-          role: 'system',
-          content: systemContent,
-        },
-        { role: 'user', content: pipeline.userText },
-      ],
-      tools: [
-        {
-          name: 'character_emote',
-          description: 'Express an emotion visually',
-          parameters: { type: 'object', properties: { emotion: { type: 'string' } } },
-        },
-      ],
-      maxOutputTokens: this.deps.env.VOICE_MAX_OUTPUT_TOKENS_PER_TURN,
-    })) {
-      if (chunk.textDelta) {
-        if (!sawFirstToken) {
-          sawFirstToken = true;
-          this.metrics.recordLlmFirstToken();
+    const circuit = this.safetyHooks?.sessionLimits?.getCircuitBreaker();
+    if (circuit?.isOpen()) {
+      const agentReply = await this.speakReply('Давай сделаем паузу и продолжим чуть позже.');
+      this.metrics.completeTurn();
+      await this.setState('listening');
+      return agentReply.heardText;
+    }
+
+    try {
+      for await (const chunk of this.llm.complete({
+        messages: [
+          {
+            role: 'system',
+            content: systemContent,
+          },
+          { role: 'user', content: pipeline.userText },
+        ],
+        tools: llmToolsForAllowlist(allowlist),
+        maxOutputTokens: this.deps.env.VOICE_MAX_OUTPUT_TOKENS_PER_TURN,
+      })) {
+        if (chunk.textDelta) {
+          if (!sawFirstToken) {
+            sawFirstToken = true;
+            this.metrics.recordLlmFirstToken();
+          }
+          replyParts.push(chunk.textDelta);
         }
-        replyParts.push(chunk.textDelta);
-      }
-      if (chunk.toolCalls) {
-        if (!sawFirstToken) {
-          sawFirstToken = true;
-          this.metrics.recordLlmFirstToken();
+        if (chunk.toolCalls) {
+          if (!sawFirstToken) {
+            sawFirstToken = true;
+            this.metrics.recordLlmFirstToken();
+          }
+          toolCalls.push(...chunk.toolCalls);
         }
-        toolCalls.push(...chunk.toolCalls);
       }
+      circuit?.recordSuccess();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'llm_failed';
+      circuit?.recordFailure(message);
+      this.metrics.recordError(message);
+      const agentReply = await this.speakReply('Я рядом. Давай попробуем ещё раз.');
+      this.metrics.completeTurn();
+      await this.setState('listening');
+      return agentReply.heardText;
     }
 
     for (const call of toolCalls) {
-      if (call.name !== 'character_emote') continue;
-      try {
-        const args = JSON.parse(call.argumentsJson) as { emotion?: string };
-        const emotion: CharacterEmotion = characterEmotionSchema.parse(args.emotion ?? 'calm');
-        const result = await this.toolClient.invoke(
-          this.context.conversationSessionId,
-          this.sceneKey,
-          {
-            name: 'character_emote',
-            callId: call.id,
-            arguments: { emotion },
-          },
-        );
-        await this.deps.transport.publishToolResult(result);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'tool_invoke_failed';
-        this.metrics.recordError(message);
-      }
+      await this.invokeToolCall(call);
     }
 
     const reply = replyParts.join('').trim() || 'Я рядом.';
-    const safeReply = await runOutputPipeline(this.safetyHooks, {
+    const safeReply = await runOutputPipeline(hooks, {
       context: this.context,
       userText: text,
       agentText: reply,
@@ -224,6 +238,7 @@ export class AgentSession {
       playedTextLength: agentReply.playedTextLength,
     });
 
+    this.recordTurnUsage(text.length, safeReply.length, agentReply.heardText.length);
     this.metrics.completeTurn();
     await this.setState('listening');
     return agentReply.heardText;
@@ -244,6 +259,88 @@ export class AgentSession {
     }
     await this.deps.transport.disconnect();
     await this.setState('unavailable');
+  }
+
+  private async invokeToolCall(call: {
+    id: string;
+    name: string;
+    argumentsJson: string;
+  }): Promise<void> {
+    if (!this.context) return;
+    let args: Record<string, unknown>;
+    try {
+      args = JSON.parse(call.argumentsJson) as Record<string, unknown>;
+    } catch {
+      this.metrics.recordError('tool_args_parse_failed');
+      return;
+    }
+
+    const parsed = agentToolRequestSchema.safeParse({
+      name: call.name,
+      callId: call.id,
+      arguments: args,
+    });
+    if (!parsed.success) {
+      this.metrics.recordError('tool_schema_rejected');
+      return;
+    }
+
+    const request: AgentToolRequest = parsed.data;
+    try {
+      const result = await this.toolClient.invoke(
+        this.context.conversationSessionId,
+        this.sceneKey,
+        request,
+        `turn-${this.turnSequence}`,
+        this.context.sceneState,
+      );
+      await this.deps.transport.publishToolResult(result);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'tool_invoke_failed';
+      this.metrics.recordError(message);
+    }
+  }
+
+  private recordTurnUsage(inputTokens: number, outputTokens: number, ttsChars: number): void {
+    const costUsd =
+      this.safetyHooks?.budgetTracker?.estimateCostUsd({
+        inputTokens,
+        outputTokens,
+        ttsChars,
+        sttSeconds: 0,
+      }) ?? 0;
+
+    if (this.safetyHooks?.sessionUsage) {
+      const usage = this.safetyHooks.sessionUsage;
+      usage.turnCount += 1;
+      usage.turnTimestamps.push(Date.now());
+      usage.lastActivityAtMs = Date.now();
+      usage.outputTokensUsed += outputTokens;
+      usage.ttsCharactersUsed += ttsChars;
+      usage.estimatedCostUsd += costUsd;
+    }
+
+    if (this.context && this.safetyHooks?.budgetTracker) {
+      void this.safetyHooks.budgetTracker.recordUsage(this.context.childId, {
+        inputTokens,
+        outputTokens,
+        ttsChars,
+        sttSeconds: 0,
+      });
+    }
+
+    if (this.context) {
+      void this.usageClient
+        .record(this.context.conversationSessionId, {
+          costInputTokens: inputTokens,
+          costOutputTokens: outputTokens,
+          costTtsChars: ttsChars,
+        })
+        .catch((error: unknown) => {
+          const message = error instanceof Error ? error.message : 'usage_record_failed';
+          this.metrics.recordError(message);
+        });
+    }
   }
 
   private async handleAudio(chunk: Uint8Array): Promise<void> {
@@ -289,9 +386,16 @@ export class AgentSession {
       void this.deps.transport.publishAudio(audio);
     });
 
-    tts.writeText(reply);
-    this.metrics.addUsage({ ttsChars: reply.length });
-    await tts.end();
+    try {
+      tts.writeText(reply);
+      this.metrics.addUsage({ ttsChars: reply.length });
+      await tts.end();
+      this.safetyHooks?.sessionLimits?.getCircuitBreaker().recordSuccess();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'tts_failed';
+      this.safetyHooks?.sessionLimits?.getCircuitBreaker().recordFailure(message);
+      this.metrics.recordError(message);
+    }
 
     this.activeTts = undefined;
     const snap = this.bargeIn.completeSpeaking();

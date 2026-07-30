@@ -5,6 +5,7 @@ import {
   type PromptVersionKind,
   type PromptVersionRecord,
 } from '@pamagochi/agent-core';
+import { egressFetch } from '../safety/egress-fetch.js';
 
 export interface PromptVersionLoaderOptions {
   apiBaseUrl: string;
@@ -34,7 +35,7 @@ export class PromptVersionLoader {
   async loadActive(
     options: PromptVersionLoaderOptions,
   ): Promise<Record<PromptVersionKind, PromptVersionRecord>> {
-    const fetchImpl = options.fetchFn ?? fetch;
+    const fetchImpl = options.fetchFn ?? egressFetch;
     const url = `${options.apiBaseUrl.replace(/\/$/, '')}/prompt-versions/active`;
     const response = await fetchImpl(url, {
       headers: { Authorization: `Bearer ${options.serviceToken}` },

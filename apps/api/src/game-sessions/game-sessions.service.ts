@@ -12,6 +12,7 @@ import { PrismaService } from '../database/prisma.service.js';
 import { AppConfigService } from '../config/app-config.service.js';
 import { ageBandFromBirth } from './age-band.js';
 import { LivekitTokenService } from './livekit-token.service.js';
+import { IntroProgressService } from '../intro-progress/intro-progress.service.js';
 
 const DEFAULT_SESSION_TTL_SECONDS = 2 * 60 * 60;
 
@@ -25,6 +26,7 @@ export class GameSessionsService {
     private readonly prisma: PrismaService,
     private readonly config: AppConfigService,
     private readonly livekit: LivekitTokenService,
+    private readonly introProgress: IntroProgressService,
   ) {}
 
   async createForParent(input: {
@@ -113,6 +115,10 @@ export class GameSessionsService {
       canSubscribe: true,
     });
 
+    const progress = await this.introProgress.getOrCreateForChild(session.childId);
+    const sceneKey = this.introProgress.sceneKeyFor(progress.state);
+    const sceneState = progress.state;
+
     return {
       protocolVersion: '1',
       gameSessionId: session.id,
@@ -131,7 +137,9 @@ export class GameSessionsService {
         token: livekitToken,
       },
       initialAgentState: 'connecting',
-      sceneKey: 'talking-light',
+      sceneKey,
+      sceneState,
+      introProgress: progress,
     };
   }
 

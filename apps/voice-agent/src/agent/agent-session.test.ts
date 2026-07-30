@@ -122,4 +122,47 @@ describe('AgentSession', () => {
     await new Promise((resolve) => setTimeout(resolve, 100));
     expect(states).toContain('interrupted');
   });
+
+  it('invokes scene_request_event with sceneState for ship-capsule intro', async () => {
+    const transport = new MockRoomTransport('game-gs1');
+    const introContext: VoiceSessionContext = {
+      ...context,
+      sceneKey: 'ship-capsule-intro',
+      sceneState: 'POWER_RESTORED',
+      worldState: { introState: 'POWER_RESTORED', capsuleOpen: false },
+      goal: 'Ask the child to restore power carefully.',
+    };
+    const contextClient = {
+      fetch: vi.fn(async () => introContext),
+    } as unknown as SessionContextClient;
+    const { transcriptClient, toolClient } = createMocks();
+    const { MockLlmProvider } = await import('../providers/llm/mock-llm.provider.js');
+
+    const session = new AgentSession({
+      env,
+      transport,
+      contextClient,
+      transcriptClient,
+      toolClient,
+      llm: new MockLlmProvider({ sceneEventId: 'OPEN_CAPSULE' }),
+    });
+
+    await session.start('gs1');
+    expect(session.getContext()?.sceneKey).toBe('ship-capsule-intro');
+
+    await session.handleFinalTranscript('открой капсулу');
+    expect(toolClient.invoke).toHaveBeenCalledWith(
+      'cs1',
+      'ship-capsule-intro',
+      expect.objectContaining({
+        name: 'scene_request_event',
+        arguments: { eventId: 'OPEN_CAPSULE' },
+      }),
+      expect.any(String),
+      'POWER_RESTORED',
+    );
+    expect(
+      transport.publishedEvents.some((e) => (e as { type?: string }).type === 'tool-result'),
+    ).toBe(true);
+  });
 });

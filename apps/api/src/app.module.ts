@@ -5,6 +5,7 @@ import { ConfigModule } from './config/config.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { GameSessionsModule } from './game-sessions/game-sessions.module.js';
 import { HealthModule } from './health/health.module.js';
+import { IntroProgressModule } from './intro-progress/intro-progress.module.js';
 import { InternalModule } from './internal/internal.module.js';
 import { JobsModule } from './jobs/jobs.module.js';
 import { ParentCabinetModule } from './parent-cabinet/parent-cabinet.module.js';
@@ -22,6 +23,7 @@ import { StorageModule } from './storage/storage.module.js';
     ProfilesModule,
     ParentCabinetModule,
     GameSessionsModule,
+    IntroProgressModule,
     InternalModule,
     StorageModule.forRoot(),
   ],

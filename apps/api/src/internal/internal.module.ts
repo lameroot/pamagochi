@@ -11,8 +11,15 @@ import { sessionLimitConfigFromApiEnv } from './session-limit-config.js';
 import { ToolValidationService } from './tool-validation.service.js';
 import { AppConfigService } from '../config/app-config.service.js';
 import { InlineJobDispatcher } from '../jobs/inline-job-dispatcher.js';
+import {
+  RETENTION_HARD_DELETE_JOB,
+  RetentionCleanupService,
+} from '../jobs/retention-cleanup.service.js';
+import { ParentCabinetModule } from '../parent-cabinet/parent-cabinet.module.js';
+import { IntroProgressModule } from '../intro-progress/intro-progress.module.js';
 
 @Module({
+  imports: [ParentCabinetModule, IntroProgressModule],
   controllers: [InternalAgentController],
   providers: [
     ServiceAuthGuard,
@@ -22,6 +29,7 @@ import { InlineJobDispatcher } from '../jobs/inline-job-dispatcher.js';
     SafetyEventService,
     MemoryContextService,
     SessionFinalizeService,
+    RetentionCleanupService,
     {
       provide: SessionLimitService,
       useFactory: (config: AppConfigService) =>
@@ -49,11 +57,15 @@ export class InternalModule implements OnModuleInit {
   constructor(
     private readonly jobs: InlineJobDispatcher,
     private readonly finalize: SessionFinalizeService,
+    private readonly retention: RetentionCleanupService,
   ) {}
 
   onModuleInit(): void {
     this.jobs.registerHandler(SESSION_FINALIZE_JOB, (payload) =>
       this.finalize.run(payload as { conversationSessionId: string }),
     );
+    this.jobs.registerHandler(RETENTION_HARD_DELETE_JOB, async (payload) => {
+      await this.retention.run(payload as { batchSize?: number; nowIso?: string });
+    });
   }
 }

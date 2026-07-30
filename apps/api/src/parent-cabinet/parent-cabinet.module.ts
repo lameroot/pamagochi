@@ -14,11 +14,14 @@ import { ParentPrivacyService } from './parent-privacy.service.js';
 import { ParentSafetyController } from './parent-safety.controller.js';
 import { ParentSafetyService } from './parent-safety.service.js';
 import { PrivacyConsentsController } from './privacy-consents.controller.js';
+import { ChildUsageController } from './child-usage.controller.js';
+import { ChildUsageService } from './child-usage.service.js';
 
 @Module({
   imports: [AuthModule, DatabaseModule, ConfigModule],
   controllers: [
     ChildOverviewController,
+    ChildUsageController,
     PrivacyConsentsController,
     ParentMemoryController,
     ParentPrivacyController,
@@ -27,12 +30,13 @@ import { PrivacyConsentsController } from './privacy-consents.controller.js';
   providers: [
     ChildOwnershipService,
     ChildOverviewService,
+    ChildUsageService,
     ParentConversationsService,
     ParentMemoryService,
     MemoryPolicyService,
     ParentPrivacyService,
     ParentSafetyService,
   ],
-  exports: [ChildOwnershipService, ParentMemoryService],
+  exports: [ChildOwnershipService, ParentMemoryService, ChildUsageService],
 })
 export class ParentCabinetModule {}

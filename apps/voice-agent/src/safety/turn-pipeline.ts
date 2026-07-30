@@ -1,3 +1,4 @@
+import type { BudgetTracker } from '@pamagochi/agent-core';
 import type { AgentToolName, VoiceSessionContext } from '@pamagochi/contracts';
 import type { SafetyPolicyDocument } from '@pamagochi/safety-contracts';
 import type { PromptAssembler } from '../prompt/prompt-assembler.js';
@@ -17,6 +18,10 @@ export interface AgentSafetyHooks {
   allowedTools?: AgentToolName[];
   roleDescription?: string;
   onSafetyEvent?: (event: unknown) => void | Promise<void>;
+  budgetTracker?: BudgetTracker;
+  getChildDailyCostUsd?: (childId: string) => number;
+  getGlobalDailyCostUsd?: () => number;
+  concurrentSessionsForChild?: number;
 }
 
 export interface TurnPipelineContext {
@@ -44,18 +49,24 @@ export async function runInputPipeline(
   }
 
   if (hooks.sessionLimits && hooks.sessionUsage) {
+    const childDailyCostUsd =
+      hooks.getChildDailyCostUsd?.(input.context.childId) ??
+      hooks.budgetTracker?.getChildSpend(input.context.childId) ??
+      hooks.sessionUsage.estimatedCostUsd;
+    const globalDailyCostUsd =
+      hooks.getGlobalDailyCostUsd?.() ?? hooks.budgetTracker?.getGlobalSpend() ?? 0;
     const check = hooks.sessionLimits.checkBeforeTurn({
       childId: input.context.childId,
       usage: hooks.sessionUsage,
-      concurrentSessionsForChild: 1,
-      childDailyCostUsd: 0,
-      globalDailyCostUsd: 0,
+      concurrentSessionsForChild: hooks.concurrentSessionsForChild ?? 1,
+      childDailyCostUsd,
+      globalDailyCostUsd,
     });
     if (!check.allowed) {
       return {
         proceed: false,
         userText: input.userText,
-        refusalLine: 'Давай сделаем паузу и продолжим чуть позже.',
+        refusalLine: check.message ?? 'Давай сделаем паузу и продолжим чуть позже.',
       };
     }
   }
@@ -81,18 +92,22 @@ export async function runInputPipeline(
   let systemPrompt: string | undefined;
   if (hooks.promptAssembler && hooks.safetyPolicy && hooks.soulText) {
     const memoryContext = input.context.memoryContext;
+    const worldState = input.context.worldState;
     const assembled = hooks.promptAssembler.assemble({
       safetyPolicy: hooks.safetyPolicy,
       soulText: hooks.soulText,
       ageBand: input.context.ageBand,
       primaryLanguage: input.context.primaryLanguage,
       roleDescription:
+        input.context.goal ??
         hooks.roleDescription ??
         'You are Pamagochi, a warm voice companion in a child adventure game.',
       childProfile: { displayName: input.context.displayName },
       relationship: memoryContext?.relationship ?? undefined,
       approvedMemory: memoryContext?.memoryItems,
       previousSummary: memoryContext?.previousSummary ?? undefined,
+      worldState: worldState ?? undefined,
+      goal: input.context.goal ?? undefined,
       allowedTools: hooks.allowedTools ?? ['character_emote'],
     });
     systemPrompt = assembled.systemPrompt;

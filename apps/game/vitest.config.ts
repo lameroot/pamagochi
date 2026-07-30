@@ -4,11 +4,13 @@ import { defineConfig } from 'vitest/config';
 
 const packageDir = path.dirname(fileURLToPath(import.meta.url));
 const contractsEntry = path.resolve(packageDir, '../../packages/contracts/dist/index.js');
+const gameProtocolEntry = path.resolve(packageDir, '../../packages/game-protocol/dist/index.js');
 
 export default defineConfig({
   resolve: {
     alias: {
-      '@[REDACTED]/contracts': contractsEntry,
+      '@pamagochi/contracts': contractsEntry,
+      '@pamagochi/game-protocol': gameProtocolEntry,
     },
   },
   test: {

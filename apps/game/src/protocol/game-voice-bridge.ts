@@ -4,6 +4,10 @@ import type { VoiceClient } from '../voice/voice-client.js';
 export interface GameVoiceBridgeHandlers {
   onAgentState(state: AgentState): void;
   onCharacterEmote?(emotion: CharacterEmotion): void;
+  onCharacterGesture?(gesture: string): void;
+  onHighlightObject?(objectId: string, intensity: string): void;
+  onSceneEventRequest?(eventId: string, callId: string): void;
+  onParentAttentionRequest?(reason: string, summary: string): void;
 }
 
 /** Maps voice runtime events to Phaser-friendly callbacks (no React). */
@@ -35,11 +39,51 @@ export class GameVoiceBridge {
   }
 
   private handleToolResult(result: AgentToolResult): void {
-    if (result.validation !== 'accepted') return;
-    if (result.name !== 'character_emote') return;
-    const emotion = result.gamePayload?.emotion;
-    if (typeof emotion !== 'string') return;
-    this.handlers.onCharacterEmote?.(emotion as CharacterEmotion);
+    if (result.validation !== 'accepted' || !result.gamePayload) return;
+    const payload = result.gamePayload;
+
+    switch (result.name) {
+      case 'character_emote': {
+        const emotion = payload.emotion;
+        if (typeof emotion === 'string') {
+          this.handlers.onCharacterEmote?.(emotion as CharacterEmotion);
+        }
+        break;
+      }
+      case 'character_gesture': {
+        const gesture = payload.gesture;
+        if (typeof gesture === 'string') this.handlers.onCharacterGesture?.(gesture);
+        break;
+      }
+      case 'scene_highlight_object': {
+        const objectId = payload.objectId;
+        const intensity = payload.intensity;
+        if (typeof objectId === 'string') {
+          this.handlers.onHighlightObject?.(
+            objectId,
+            typeof intensity === 'string' ? intensity : 'normal',
+          );
+        }
+        break;
+      }
+      case 'scene_request_event': {
+        const eventId = payload.eventId;
+        if (typeof eventId === 'string') {
+          this.handlers.onSceneEventRequest?.(eventId, result.callId);
+        }
+        break;
+      }
+      case 'request_parent_attention': {
+        const reason = payload.reason;
+        const summary = payload.shortSummary;
+        if (typeof reason === 'string' && typeof summary === 'string') {
+          this.handlers.onParentAttentionRequest?.(reason, summary);
+        }
+        break;
+      }
+      default:
+        break;
+    }
   }
 }
 
@@ -74,4 +118,17 @@ export function emotionAccentColor(emotion: CharacterEmotion): number {
     calm: 0x7dd3fc,
   };
   return colors[emotion];
+}
+
+export function agentStateAccentColor(state: AgentState): number {
+  const colors: Record<AgentState, number> = {
+    connecting: 0x64748b,
+    listening: 0x38bdf8,
+    thinking: 0xa78bfa,
+    speaking: 0x34d399,
+    interrupted: 0xfbbf24,
+    reconnecting: 0xfb923c,
+    unavailable: 0xf87171,
+  };
+  return colors[state];
 }

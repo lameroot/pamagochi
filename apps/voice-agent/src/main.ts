@@ -2,6 +2,7 @@ import { parseVoiceAgentEnv } from './config/env.schema.js';
 import { AgentSession } from './agent/agent-session.js';
 import { LiveKitRoomTransport, MockRoomTransport } from './agent/room-transport.js';
 import { PromptVersionLoader } from './prompt/prompt-version-loader.js';
+import { createDefaultSafetyRuntime } from './safety/create-default-hooks.js';
 import { SoulLoader } from './soul/soul-loader.js';
 
 /**
@@ -57,7 +58,12 @@ async function main(): Promise<void> {
       ? new MockRoomTransport(roomName)
       : new LiveKitRoomTransport(env, roomName, `${env.LIVEKIT_AGENT_NAME}-${gameSessionId}`);
 
-  const session = new AgentSession({ env, transport });
+  const safety = createDefaultSafetyRuntime(env);
+  const session = new AgentSession({
+    env,
+    transport,
+    safetyHooks: safety.hooks,
+  });
   await session.start(gameSessionId);
 
   const shutdown = async () => {
@@ -73,6 +79,8 @@ async function main(): Promise<void> {
       gameSessionId,
       roomName,
       state: session.getAgentState(),
+      sceneKey: session.getContext()?.sceneKey,
+      sceneState: session.getContext()?.sceneState,
     }),
   );
 }

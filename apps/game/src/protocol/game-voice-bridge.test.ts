@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { agentStateSchema, type AgentState, type AgentToolResult } from '@[REDACTED]/contracts';
+import { agentStateSchema, type AgentState, type AgentToolResult } from '@pamagochi/contracts';
 import { agentStatePulseScale, emotionAccentColor, GameVoiceBridge } from './game-voice-bridge.js';
 import { MockVoiceClient } from '../voice/livekit-voice-client.js';
 
@@ -59,6 +59,27 @@ describe('GameVoiceBridge', () => {
     });
 
     expect(emotes).toHaveLength(0);
+    bridge.detach();
+  });
+
+  it('forwards scene_event_request to game handler', () => {
+    const client = new MockVoiceClient();
+    const events: string[] = [];
+    const bridge = new GameVoiceBridge(client, {
+      onAgentState: () => {},
+      onSceneEventRequest: (eventId) => events.push(eventId),
+    });
+    bridge.attach();
+
+    client.simulateToolResult({
+      callId: 'c3',
+      name: 'scene_request_event',
+      validation: 'accepted',
+      safeMessage: 'ok',
+      gamePayload: { type: 'scene_event_request', eventId: 'OPEN_CAPSULE', status: 'pending' },
+    });
+
+    expect(events).toEqual(['OPEN_CAPSULE']);
     bridge.detach();
   });
 });

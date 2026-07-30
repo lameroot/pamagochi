@@ -6,3 +6,6 @@ export * from './memory-extractor.js';
 export * from './memory-policy-validator.js';
 export * from './memory-selector.js';
 export * from './retention.js';
+export * from './circuit-breaker.js';
+export * from './budget.js';
+export * from './usage-cost.js';

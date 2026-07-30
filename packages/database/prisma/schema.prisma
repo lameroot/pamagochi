@@ -180,6 +180,7 @@ model ChildProfile {
   conversationSessions  ConversationSession[]
   memoryItems           MemoryItem[]
   relationshipState     RelationshipState?
+  introProgress         IntroProgress?
   safetyEvents          SafetyEvent[]
   privacyConsents       PrivacyConsent[]
 
@@ -374,6 +375,18 @@ model RelationshipState {
   updatedAt        DateTime          @updatedAt
 
   @@map("relationship_state")
+}
+
+model IntroProgress {
+  childId              String       @id
+  child                ChildProfile @relation(fields: [childId], references: [id], onDelete: Cascade)
+  state                String       @default("SHIP_DARK")
+  sharedEventsJson     Json         @default("[]")
+  lastIdempotencyKey   String?
+  completedAt          DateTime?
+  updatedAt            DateTime     @updatedAt
+
+  @@map("intro_progress")
 }
 
 model SafetyEvent {

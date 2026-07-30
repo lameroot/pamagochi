@@ -7,13 +7,14 @@ import {
 } from '@pamagochi/contracts';
 import type { ParentAccount } from '@pamagochi/database';
 import { AuthGuard } from '../auth/auth.guard.js';
+import { ParentApiRateLimitGuard } from '../common/rate-limit.guard.js';
 import { CurrentParent } from '../auth/current-parent.decorator.js';
 import { ChildOwnershipService } from '../profiles/child-ownership.service.js';
 import { ChildOverviewService } from './child-overview.service.js';
 import { ParentConversationsService } from './parent-conversations.service.js';
 
 @Controller('api/children/:childId')
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, ParentApiRateLimitGuard)
 export class ChildOverviewController {
   constructor(
     private readonly ownership: ChildOwnershipService,

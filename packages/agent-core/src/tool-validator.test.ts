@@ -67,7 +67,7 @@ describe('ToolValidator', () => {
   });
 
   it('rejects scene_request_event when event not allowed in state', () => {
-    const allowlist = introAllowlistFor('SHIP_DARK');
+    const allowlist = introAllowlistFor('POWER_CELL_DISCOVERED');
     const { result } = validator.validate(
       { name: 'scene_request_event', callId: 'c6', arguments: { eventId: 'OPEN_CAPSULE' } },
       ctx({ sceneAllowlist: allowlist }),
@@ -86,6 +86,15 @@ describe('ToolValidator', () => {
       eventId: 'OPEN_CAPSULE',
       status: 'pending',
     });
+  });
+
+  it('rejects gestures not allowed in intro state', () => {
+    const allowlist = introAllowlistFor('FIRST_VOICE_CONTACT');
+    const { result } = validator.validate(
+      { name: 'character_gesture', callId: 'c8', arguments: { gesture: 'wave' } },
+      ctx({ sceneAllowlist: allowlist }),
+    );
+    expect(result.validation).toBe('rejected_state');
   });
 
   it('enforces rate limits', () => {

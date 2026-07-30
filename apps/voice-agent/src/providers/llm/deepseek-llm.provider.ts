@@ -1,4 +1,5 @@
 import type { VoiceAgentEnv } from '../../config/env.schema.js';
+import { egressFetch } from '../../safety/egress-fetch.js';
 import type { LlmCompletionChunk, LlmMessage, ToolCallingLlm } from '../types.js';
 
 /**
@@ -26,7 +27,7 @@ export class DeepseekLlmProvider implements ToolCallingLlm {
     messages: LlmMessage[];
     maxOutputTokens?: number;
   }): AsyncIterable<LlmCompletionChunk> {
-    const response = await fetch(`${this.baseUrl}/chat/completions`, {
+    const response = await egressFetch(`${this.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',

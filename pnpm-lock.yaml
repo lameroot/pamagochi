@@ -89,6 +89,9 @@ importers:
       '@pamagochi/game-protocol':
         specifier: workspace:*
         version: link:../../packages/game-protocol
+      '@pamagochi/safety-contracts':
+        specifier: workspace:*
+        version: link:../../packages/safety-contracts
       dotenv:
         specifier: 17.4.2
         version: 17.4.2

@@ -13,12 +13,25 @@ export interface VoiceMetricsSnapshot {
   reconnects: number;
   usage: VoiceUsageSnapshot;
   errors: string[];
+  turnCount: number;
+  estimatedCostUsd: number;
 }
+
+/** Rough USD estimate for dashboard — not billing-grade. */
+const COST_RATES = {
+  inputTokenUsd: 0.000_000_14,
+  outputTokenUsd: 0.000_000_28,
+  ttsCharUsd: 0.000_015,
+  sttSecondUsd: 0.000_43,
+};
 
 /**
  * Collects vertical-slice latency metrics without secrets or chain-of-thought.
  */
 export class VoiceMetricsCollector {
+  private static readonly MAX_SAMPLES = 200;
+  private static readonly MAX_ERRORS = 50;
+
   private readonly sttPartialMs: number[] = [];
   private readonly llmFirstTokenMs: number[] = [];
   private readonly ttsFirstAudioMs: number[] = [];
@@ -46,14 +59,14 @@ export class VoiceMetricsCollector {
 
   recordSttPartial(): void {
     if (this.sttStartedAtMs === undefined) return;
-    this.sttPartialMs.push(Date.now() - this.sttStartedAtMs);
+    this.pushBounded(this.sttPartialMs, Date.now() - this.sttStartedAtMs);
   }
 
   recordLlmFirstToken(): void {
     if (this.llmStartedAtMs !== undefined) return;
     this.llmStartedAtMs = Date.now();
     if (this.turnStartedAtMs !== undefined) {
-      this.llmFirstTokenMs.push(this.llmStartedAtMs - this.turnStartedAtMs);
+      this.pushBounded(this.llmFirstTokenMs, this.llmStartedAtMs - this.turnStartedAtMs);
     }
   }
 
@@ -61,13 +74,13 @@ export class VoiceMetricsCollector {
     if (this.ttsStartedAtMs !== undefined) return;
     this.ttsStartedAtMs = Date.now();
     if (this.turnStartedAtMs !== undefined) {
-      this.ttsFirstAudioMs.push(this.ttsStartedAtMs - this.turnStartedAtMs);
+      this.pushBounded(this.ttsFirstAudioMs, this.ttsStartedAtMs - this.turnStartedAtMs);
     }
   }
 
   completeTurn(): void {
     if (this.turnStartedAtMs === undefined) return;
-    this.e2eMs.push(Date.now() - this.turnStartedAtMs);
+    this.pushBounded(this.e2eMs, Date.now() - this.turnStartedAtMs);
     this.turnStartedAtMs = undefined;
   }
 
@@ -78,6 +91,9 @@ export class VoiceMetricsCollector {
   recordError(message: string): void {
     const safe = message.slice(0, 200);
     this.errors.push(safe);
+    if (this.errors.length > VoiceMetricsCollector.MAX_ERRORS) {
+      this.errors.splice(0, this.errors.length - VoiceMetricsCollector.MAX_ERRORS);
+    }
   }
 
   addUsage(partial: Partial<VoiceUsageSnapshot>): void {
@@ -90,14 +106,30 @@ export class VoiceMetricsCollector {
   }
 
   snapshot(): VoiceMetricsSnapshot {
+    const usage = { ...this.usage };
+    const estimatedCostUsd =
+      usage.inputTokens * COST_RATES.inputTokenUsd +
+      usage.outputTokens * COST_RATES.outputTokenUsd +
+      usage.ttsChars * COST_RATES.ttsCharUsd +
+      usage.sttSeconds * COST_RATES.sttSecondUsd;
+
     return {
       sttPartialMs: [...this.sttPartialMs],
       llmFirstTokenMs: [...this.llmFirstTokenMs],
       ttsFirstAudioMs: [...this.ttsFirstAudioMs],
       e2eMs: [...this.e2eMs],
       reconnects: this.reconnects,
-      usage: { ...this.usage },
+      usage,
       errors: [...this.errors],
+      turnCount: this.e2eMs.length,
+      estimatedCostUsd: Math.round(estimatedCostUsd * 1_000_000) / 1_000_000,
     };
+  }
+
+  private pushBounded(target: number[], value: number): void {
+    target.push(value);
+    if (target.length > VoiceMetricsCollector.MAX_SAMPLES) {
+      target.splice(0, target.length - VoiceMetricsCollector.MAX_SAMPLES);
+    }
   }
 }

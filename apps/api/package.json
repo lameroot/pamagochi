@@ -37,7 +37,8 @@
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2",
     "zod": "4.4.3",
-    "@pamagochi/agent-core": "workspace:*"
+    "@pamagochi/agent-core": "workspace:*",
+    "@pamagochi/safety-contracts": "workspace:*"
   },
   "devDependencies": {
     "@nestjs/testing": "11.1.28",

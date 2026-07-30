@@ -14,7 +14,7 @@ import { AppConfigService } from '../../config/app-config.service.js';
 import { AuthRateLimitGuard } from '../../common/rate-limit.guard.js';
 import { signLocalJwt } from './local-jwt.js';
 
-export interface DevLoginResponse extends AuthTokenResponse {}
+export type DevLoginResponse = AuthTokenResponse;
 
 /**
  * Only registered when APP_PROFILE=local, AUTH_PROVIDER=local and

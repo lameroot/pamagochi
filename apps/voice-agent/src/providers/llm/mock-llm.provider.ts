@@ -3,6 +3,8 @@ import type { LlmCompletionChunk, LlmMessage, ToolCallingLlm } from '../types.js
 export interface MockLlmOptions {
   /** When set, yields a character_emote tool call instead of plain text. */
   toolEmotion?: 'curious' | 'happy' | 'confused' | 'surprised' | 'calm';
+  /** Optional scene event request for ship-capsule intro tests. */
+  sceneEventId?: string;
 }
 
 export class MockLlmProvider implements ToolCallingLlm {
@@ -28,6 +30,21 @@ export class MockLlmProvider implements ToolCallingLlm {
           },
         ],
       };
+      yield { done: true };
+      return;
+    }
+
+    if (this.options.sceneEventId && input.tools?.some((t) => t.name === 'scene_request_event')) {
+      yield {
+        toolCalls: [
+          {
+            id: 'mock-scene-1',
+            name: 'scene_request_event',
+            argumentsJson: JSON.stringify({ eventId: this.options.sceneEventId }),
+          },
+        ],
+      };
+      yield { textDelta: 'Давай откроем капсулу.' };
       yield { done: true };
       return;
     }

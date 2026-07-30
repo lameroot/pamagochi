@@ -1,4 +1,23 @@
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { config as loadDotenv } from 'dotenv';
+
+const apiDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(apiDir, '../../..');
+
+function loadOptionalEnvFile(fileName: string): void {
+  const filePath = path.join(repoRoot, fileName);
+  if (existsSync(filePath)) {
+    loadDotenv({ path: filePath, override: false, quiet: true });
+  }
+}
+
 export function applyLocalTestEnv(): void {
+  // Prefer committed test profile, then developer local profile, without overriding CI env.
+  loadOptionalEnvFile('.env.test');
+  loadOptionalEnvFile('.env.local');
+
   process.env.APP_PROFILE = 'local';
   process.env.NODE_ENV = 'test';
   process.env.API_PORT = process.env.API_PORT ?? '3100';
@@ -15,8 +34,7 @@ export function applyLocalTestEnv(): void {
     process.env.LOCAL_STORAGE_SIGNING_SECRET ?? 'test-secret-please-generate-32-bytes-min';
   process.env.JOB_PROVIDER = 'inline';
   process.env.DATABASE_URL =
-    process.env.DATABASE_URL ??
-    'postgresql://pamagochi_test:pamagochi_test@localhost:5433/pamagochi_test';
+    process.env.DATABASE_URL ?? 'postgresql://pamagochi:pamagochi@localhost:5432/pamagochi';
   process.env.LIVEKIT_URL = process.env.LIVEKIT_URL ?? 'wss://example.livekit.cloud';
   process.env.LIVEKIT_API_KEY = process.env.LIVEKIT_API_KEY ?? 'devkey';
   process.env.LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET ?? 'secret'.padEnd(32, 'x');

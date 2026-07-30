@@ -18,13 +18,14 @@ import {
 } from '@pamagochi/contracts';
 import type { ParentAccount } from '@pamagochi/database';
 import { AuthGuard } from '../auth/auth.guard.js';
+import { ParentApiRateLimitGuard } from '../common/rate-limit.guard.js';
 import { CurrentParent } from '../auth/current-parent.decorator.js';
 import { ChildOwnershipService } from '../profiles/child-ownership.service.js';
 import { MemoryPolicyService } from './memory-policy.service.js';
 import { ParentMemoryService } from './parent-memory.service.js';
 
 @Controller('api/children/:childId/memory')
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, ParentApiRateLimitGuard)
 export class ParentMemoryController {
   constructor(
     private readonly ownership: ChildOwnershipService,

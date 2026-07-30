@@ -20,6 +20,8 @@ describe('VoiceMetricsCollector', () => {
     expect(snap.e2eMs).toHaveLength(1);
     expect(snap.reconnects).toBe(1);
     expect(snap.usage.inputTokens).toBe(10);
+    expect(snap.turnCount).toBe(1);
+    expect(snap.estimatedCostUsd).toBeGreaterThan(0);
     expect(snap.errors).toEqual(['connection_reset']);
     expect(JSON.stringify(snap)).not.toMatch(/api[_-]?key|secret|password/i);
   });

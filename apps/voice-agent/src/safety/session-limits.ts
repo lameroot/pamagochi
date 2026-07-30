@@ -1,4 +1,7 @@
+import { SimpleCircuitBreaker, type CircuitBreaker } from '@pamagochi/agent-core';
 import type { VoiceAgentEnv } from '../config/env.schema.js';
+
+export { SimpleCircuitBreaker, type CircuitBreaker } from '@pamagochi/agent-core';
 
 export interface SessionLimitConfig {
   maxDurationSeconds: number;
@@ -41,12 +44,6 @@ export interface SessionLimitCheckResult {
   message: string | null;
 }
 
-export interface CircuitBreakerState {
-  tripped: boolean;
-  reason: string | null;
-  trippedAtMs: number | null;
-}
-
 export interface SessionLimitsContext {
   childId: string;
   usage: SessionUsage;
@@ -54,30 +51,6 @@ export interface SessionLimitsContext {
   childDailyCostUsd: number;
   globalDailyCostUsd: number;
   nowMs?: number;
-}
-
-/** Circuit breaker interface for provider outages or cost spikes. */
-export interface CircuitBreaker {
-  readonly state: CircuitBreakerState;
-  trip(reason: string): void;
-  reset(): void;
-  isOpen(): boolean;
-}
-
-export class SimpleCircuitBreaker implements CircuitBreaker {
-  state: CircuitBreakerState = { tripped: false, reason: null, trippedAtMs: null };
-
-  trip(reason: string): void {
-    this.state = { tripped: true, reason, trippedAtMs: Date.now() };
-  }
-
-  reset(): void {
-    this.state = { tripped: false, reason: null, trippedAtMs: null };
-  }
-
-  isOpen(): boolean {
-    return this.state.tripped;
-  }
 }
 
 export function sessionLimitConfigFromEnv(env: VoiceAgentEnv): SessionLimitConfig {

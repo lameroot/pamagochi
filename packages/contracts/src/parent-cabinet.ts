@@ -243,3 +243,29 @@ export const authTokenResponseSchema = z.object({
   expiresIn: z.number().int().positive(),
 });
 export type AuthTokenResponse = z.infer<typeof authTokenResponseSchema>;
+
+export const childUsageTotalsSchema = z.object({
+  inputTokens: z.number().int().nonnegative(),
+  outputTokens: z.number().int().nonnegative(),
+  ttsChars: z.number().int().nonnegative(),
+  sttSeconds: z.number().int().nonnegative(),
+  estimatedCostUsd: z.number().nonnegative(),
+});
+export type ChildUsageTotalsDto = z.infer<typeof childUsageTotalsSchema>;
+
+export const childUsageSummarySchema = z.object({
+  childId: z.string(),
+  periodStart: z.string().datetime(),
+  periodEnd: z.string().datetime(),
+  sessionCount: z.number().int().nonnegative(),
+  totals: childUsageTotalsSchema,
+});
+export type ChildUsageSummaryDto = z.infer<typeof childUsageSummarySchema>;
+
+export const globalUsageSummarySchema = z.object({
+  periodStart: z.string().datetime(),
+  periodEnd: z.string().datetime(),
+  sessionCount: z.number().int().nonnegative(),
+  totals: childUsageTotalsSchema,
+});
+export type GlobalUsageSummaryDto = z.infer<typeof globalUsageSummarySchema>;

@@ -18,18 +18,23 @@ import {
   type ActivePromptVersionsResponse,
   type AgentToolResult,
   type AppendConversationTurnResponse,
+  type GlobalUsageSummaryDto,
   type SafetyEventDto,
   type VoiceSessionContext,
 } from '@pamagochi/contracts';
 import { z } from 'zod';
+import { InternalApiRateLimitGuard } from '../common/rate-limit.guard.js';
 import { PrismaService } from '../database/prisma.service.js';
 import { ageBandFromBirth } from '../game-sessions/age-band.js';
+import { ChildUsageService } from '../parent-cabinet/child-usage.service.js';
 import { MemoryContextService } from './memory-context.service.js';
 import { AgentConversationService } from './agent-conversation.service.js';
 import { PromptVersionService } from './prompt-version.service.js';
 import { SafetyEventService } from './safety-event.service.js';
 import { ServiceAuthGuard } from './service-auth.guard.js';
 import { ToolValidationService } from './tool-validation.service.js';
+import { IntroProgressService } from '../intro-progress/intro-progress.service.js';
+import { introRoleDescriptionFor, isIntroState } from '@pamagochi/game-protocol';
 
 const invokeToolBodySchema = z.object({
   sceneKey: z.string().min(1).max(64),
@@ -40,7 +45,7 @@ const invokeToolBodySchema = z.object({
 });
 
 @Controller('internal/agent')
-@UseGuards(ServiceAuthGuard)
+@UseGuards(ServiceAuthGuard, InternalApiRateLimitGuard)
 export class InternalAgentController {
   constructor(
     private readonly prisma: PrismaService,
@@ -49,6 +54,8 @@ export class InternalAgentController {
     private readonly promptVersions: PromptVersionService,
     private readonly safetyEvents: SafetyEventService,
     private readonly memory: MemoryContextService,
+    private readonly usage: ChildUsageService,
+    private readonly introProgress: IntroProgressService,
   ) {}
 
   @Get('sessions/:gameSessionId/context')
@@ -92,6 +99,13 @@ export class InternalAgentController {
     }
 
     const memoryContext = await this.memory.buildMemoryContext(session.childId);
+    const progress = await this.introProgress.getOrCreateForChild(session.childId);
+    const sceneKey = this.introProgress.sceneKeyFor(progress.state);
+    const sceneState = progress.state;
+    const worldState = isIntroState(progress.state)
+      ? this.introProgress.worldStateFor(progress.state)
+      : undefined;
+    const goal = isIntroState(progress.state) ? introRoleDescriptionFor(progress.state) : undefined;
 
     return {
       protocolVersion: '1',
@@ -108,6 +122,10 @@ export class InternalAgentController {
       safetyPolicyVersion: conversation.safetyPolicyVersion ?? '0.1.0',
       livekitRoomName: conversation.livekitRoomId,
       memoryContext,
+      sceneKey,
+      sceneState,
+      worldState,
+      goal,
     };
   }
 
@@ -157,8 +175,30 @@ export class InternalAgentController {
     });
   }
 
+  @Post('sessions/:conversationSessionId/usage')
+  async recordUsage(
+    @Param('conversationSessionId') conversationSessionId: string,
+    @Body() body: unknown,
+  ): Promise<{ ok: true }> {
+    const parsed = z
+      .object({
+        costInputTokens: z.number().int().nonnegative().optional(),
+        costOutputTokens: z.number().int().nonnegative().optional(),
+        costTtsChars: z.number().int().nonnegative().optional(),
+        costSttSeconds: z.number().int().nonnegative().optional(),
+      })
+      .parse(body);
+    await this.conversation.recordUsage(conversationSessionId, parsed);
+    return { ok: true };
+  }
+
   @Get('prompt-versions/active')
   getActivePromptVersions(): ActivePromptVersionsResponse {
     return this.promptVersions.getActiveSnapshot();
+  }
+
+  @Get('usage')
+  getGlobalUsage(): Promise<GlobalUsageSummaryDto> {
+    return this.usage.getGlobalDailySummary();
   }
 }
