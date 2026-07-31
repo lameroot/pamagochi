@@ -35,6 +35,10 @@
     "smoke:cloud": "node scripts/verify-cloud.mjs",
     "check": "pnpm check:no-secrets-in-examples && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "dev:game": "pnpm --filter @pamagochi/game run dev",
+    "game": "pnpm --filter @pamagochi/game exec vite --mode game",
+    "game:voice": "pnpm --filter @pamagochi/game exec vite --mode game-voice",
+    "game:hatching": "pnpm --filter @pamagochi/game exec vite --mode game-hatching",
+    "game:room": "pnpm --filter @pamagochi/game exec vite --mode game-room",
     "dev:parent": "pnpm --filter @pamagochi/parent run dev",
     "dev:voice-agent": "pnpm --filter @pamagochi/voice-agent run dev"
   },

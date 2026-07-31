@@ -1,0 +1,44 @@
+{
+  "section1": {
+    "files": [
+      {
+        "type": "svg",
+        "key": "capsule-room",
+        "url": "assets/environment/capsule-room.svg",
+        "svgConfig": { "width": 1280, "height": 720 }
+      },
+      {
+        "type": "svg",
+        "key": "capsule-room-foreground",
+        "url": "assets/environment/capsule-room-foreground.svg",
+        "svgConfig": { "width": 1280, "height": 720 }
+      },
+      {
+        "type": "svg",
+        "key": "pamagochi-idle",
+        "url": "assets/characters/pamagochi-idle.svg",
+        "svgConfig": { "width": 160, "height": 180 }
+      },
+      {
+        "type": "svg",
+        "key": "pamagochi-walk",
+        "url": "assets/characters/pamagochi-walk.svg",
+        "svgConfig": { "width": 160, "height": 180 }
+      },
+      {
+        "type": "svg",
+        "key": "pamagochi-egg",
+        "url": "assets/characters/pamagochi-egg.svg",
+        "svgConfig": { "width": 220, "height": 270 }
+      }
+    ]
+  },
+  "meta": {
+    "app": "Phaser Editor 2D - Asset Pack Editor",
+    "contentType": "phasereditor2d.pack.core.AssetContentType",
+    "url": "https://phasereditor2d.com",
+    "version": 2,
+    "showAllFilesInBlocks": false,
+    "visible": true
+  }
+}

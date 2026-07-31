@@ -1,0 +1,66 @@
+{
+    "id": "d570c185-38d4-46cc-a2ce-91fa8ee95d12",
+    "sceneType": "SCENE",
+    "settings": {
+        "preloadPackFiles": [],
+        "createMethodName": "editorCreate",
+        "sceneKey": "CapsuleRoomLayout"
+    },
+    "displayList": [
+        {
+            "type": "Image",
+            "id": "9d9a6b31-82c3-4723-8437-7d9d795b310d",
+            "label": "capsuleRoomBackground",
+            "scope": "PUBLIC",
+            "texture": {
+                "key": "capsule-room"
+            },
+            "x": 640,
+            "y": 360
+        },
+        {
+            "type": "Image",
+            "id": "84e879bc-9f9c-424f-8d0a-0c2ec5d39749",
+            "label": "capsuleRoomForeground",
+            "scope": "PUBLIC",
+            "texture": {
+                "key": "capsule-room-foreground"
+            },
+            "x": 640,
+            "y": 360
+        },
+        {
+            "type": "Image",
+            "id": "e8d1fb83-ad7b-401d-8837-4ef409d9c059",
+            "label": "pamagochiPreview",
+            "scope": "PUBLIC",
+            "texture": {
+                "key": "pamagochi-idle"
+            },
+            "x": 642,
+            "y": 545,
+            "originY": 0.86
+        },
+        {
+            "type": "Image",
+            "id": "0563f28b-4efe-44a3-a6fd-fc47bc5fe5c3",
+            "label": "eggPreview",
+            "scope": "PUBLIC",
+            "texture": {
+                "key": "pamagochi-egg"
+            },
+            "x": 525,
+            "y": 565,
+            "scaleX": 0.45,
+            "scaleY": 0.45,
+            "originY": 0.86
+        }
+    ],
+    "plainObjects": [],
+    "meta": {
+        "app": "Phaser Editor - Scene Editor",
+        "url": "https://phaser.io/editor",
+        "contentType": "phasereditor2d.core.scene.SceneContentType",
+        "version": 5
+    }
+}

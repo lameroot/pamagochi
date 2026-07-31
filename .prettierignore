@@ -9,5 +9,7 @@ pnpm-lock.yaml
 packages/database/prisma/migrations
 apps/web/dist
 apps/game/dist
+# Phaser Editor generated output; re-created from the adjacent .scene files.
+apps/game/*.js
 apps/parent/dist
 CHANGELOG.md

@@ -1,0 +1,24 @@
+{
+    "id": "f82e6e9f-c90e-4f00-86ac-165006309954",
+    "sceneType": "PREFAB",
+    "settings": {
+        "preloadMethodName": "",
+        "preloadPackFiles": [],
+        "createMethodName": ""
+    },
+    "displayList": [
+        {
+            "type": "Container",
+            "id": "9c0135ea-3f94-467b-89a6-229e6eb41ba3",
+            "label": "capsuleDoor",
+            "scope": "PUBLIC"
+        }
+    ],
+    "plainObjects": [],
+    "meta": {
+        "app": "Phaser Editor - Scene Editor",
+        "url": "https://phaser.io/editor",
+        "contentType": "phasereditor2d.core.scene.SceneContentType",
+        "version": 5
+    }
+}
